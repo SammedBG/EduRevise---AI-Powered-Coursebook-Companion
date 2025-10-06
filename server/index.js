@@ -35,7 +35,7 @@ mongoose.connection.on('error', (err) => {
 });
 
 // Routes
-app.use('/api/auth', require('./routes/auth'));
+app.use('/api/auth', require('./routes/auth').router);
 app.use('/api/pdfs', require('./routes/pdfs'));
 app.use('/api/chat', require('./routes/chat'));
 app.use('/api/quiz', require('./routes/quiz'));
