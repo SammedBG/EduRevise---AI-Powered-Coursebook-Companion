@@ -50,7 +50,7 @@ A comprehensive web application that helps school students revise from their cou
 
 ### 1. Clone the Repository
 ```bash
-git clone <repository-url>
+git clone https://github.com/SammedBG/EduRevise---AI-Powered-Coursebook-Companion.git
 cd study-buddy
 ```
 
