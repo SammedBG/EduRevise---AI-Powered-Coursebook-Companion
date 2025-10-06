@@ -15,7 +15,6 @@ import { authAPI } from './services/api';
 function App() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
     checkAuthStatus();

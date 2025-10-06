@@ -10,6 +10,7 @@ const Progress = () => {
 
   useEffect(() => {
     fetchProgressData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedPeriod]);
 
   const fetchProgressData = async () => {
@@ -44,7 +45,7 @@ const Progress = () => {
 
   const stats = dashboardData?.overallStats || {};
   const recommendations = dashboardData?.recommendations || [];
-  const analytics = dashboardData?.analytics || {};
+  // const analytics = dashboardData?.analytics || {};
 
   const masteryColors = {
     beginner: 'bg-red-100 text-red-800',

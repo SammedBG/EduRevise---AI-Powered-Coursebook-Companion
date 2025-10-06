@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FiUpload, FiFileText, FiTrash2, FiSearch, FiPlus, FiDownload } from 'react-icons/fi';
+import { FiFileText, FiTrash2, FiSearch, FiPlus } from 'react-icons/fi';
 import { pdfAPI } from '../../services/api';
 import toast from 'react-hot-toast';
 

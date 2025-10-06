@@ -9,7 +9,7 @@ const Chat = () => {
   const [currentChat, setCurrentChat] = useState(null);
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
-  const [loading, setLoading] = useState(false);
+  // removed unused loading state
   const [sending, setSending] = useState(false);
   const messagesEndRef = useRef(null);
   const [pdfs, setPdfs] = useState([]);

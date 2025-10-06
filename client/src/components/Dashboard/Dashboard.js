@@ -5,7 +5,6 @@ import {
   FiMessageSquare, 
   FiHelpCircle, 
   FiTrendingUp,
-  FiPlus,
   FiBookOpen,
   FiClock,
   FiTarget
