@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FiPlay, FiCheck, FiHelpCircle, FiFileText } from 'react-icons/fi';
+import { FiPlay, FiCheck, FiX, FiHelpCircle, FiFileText } from 'react-icons/fi';
 import { quizAPI, pdfAPI } from '../../services/api';
 import toast from 'react-hot-toast';
 
@@ -53,7 +53,7 @@ const Quiz = () => {
       setQuizStarted(true);
       toast.success('Quiz generated successfully!');
     } catch (error) {
-      toast.error(error.response?.data?.error || 'Failed to generate quiz');
+      toast.error('Failed to generate quiz');
     } finally {
       setLoading(false);
     }

@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { Toaster } from 'react-hot-toast';
 import AuthContext from './contexts/AuthContext';
 import Navbar from './components/Layout/Navbar';
+import Sidebar from './components/Layout/Sidebar';
 import Login from './components/Auth/Login';
 import Register from './components/Auth/Register';
 import Dashboard from './components/Dashboard/Dashboard';
@@ -10,13 +11,12 @@ import PDFManager from './components/PDF/PDFManager';
 import Chat from './components/Chat/Chat';
 import Quiz from './components/Quiz/Quiz';
 import Progress from './components/Progress/Progress';
-import YouTubePage from './components/YouTube/YouTubePage';
 import { authAPI } from './services/api';
 
 function App() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  // Sidebar was removed in the top-nav layout; no sidebar state needed
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
     checkAuthStatus();
@@ -77,21 +77,35 @@ function App() {
       <Router>
         <div className="min-h-screen bg-gray-50">
           <Toaster position="top-right" />
-          <Navbar />
-          <main className="pt-16 min-h-screen">
-            <Routes>
-              <Route path="/" element={<Dashboard />} />
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/pdfs" element={<PDFManager />} />
-              <Route path="/chat" element={<Chat />} />
-              <Route path="/chat/:chatId" element={<Chat />} />
-              <Route path="/quiz" element={<Quiz />} />
-              <Route path="/quiz/:quizId" element={<Quiz />} />
-              <Route path="/videos" element={<YouTubePage />} />
-              <Route path="/progress" element={<Progress />} />
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
-          </main>
+          
+          {/* Navbar */}
+          <Navbar 
+            onMenuClick={() => setSidebarOpen(!sidebarOpen)}
+            sidebarOpen={sidebarOpen}
+          />
+
+          {/* Sidebar */}
+          <Sidebar 
+            open={sidebarOpen}
+            onClose={() => setSidebarOpen(false)}
+          />
+
+          {/* Main Content */}
+          <div className={`transition-all duration-300 ${sidebarOpen ? 'lg:ml-64' : 'ml-0'}`}>
+            <main className="pt-16 min-h-screen">
+              <Routes>
+                <Route path="/" element={<Dashboard />} />
+                <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/pdfs" element={<PDFManager />} />
+                <Route path="/chat" element={<Chat />} />
+                <Route path="/chat/:chatId" element={<Chat />} />
+                <Route path="/quiz" element={<Quiz />} />
+                <Route path="/quiz/:quizId" element={<Quiz />} />
+                <Route path="/progress" element={<Progress />} />
+                <Route path="*" element={<Navigate to="/" replace />} />
+              </Routes>
+            </main>
+          </div>
         </div>
       </Router>
     </AuthContext.Provider>

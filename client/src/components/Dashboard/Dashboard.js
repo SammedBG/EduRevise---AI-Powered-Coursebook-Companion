@@ -5,13 +5,13 @@ import {
   FiMessageSquare, 
   FiHelpCircle, 
   FiTrendingUp,
+  FiPlus,
   FiBookOpen,
   FiClock,
   FiTarget
 } from 'react-icons/fi';
 import AuthContext from '../../contexts/AuthContext';
 import { progressAPI, pdfAPI, chatAPI } from '../../services/api';
-import YouTubeRecommendations from '../YouTube/YouTubeRecommendations';
 import toast from 'react-hot-toast';
 
 const Dashboard = () => {
@@ -276,17 +276,7 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* YouTube Recommendations */}
-      {recentPDFs.length > 0 && (
-        <div className="mt-8">
-          <YouTubeRecommendations 
-            pdfIds={recentPDFs.slice(0, 3).map(pdf => pdf.id)} 
-            maxResults={3}
-          />
-        </div>
-      )}
-
-      {/* Learning Recommendations */}
+      {/* Recommendations */}
       {dashboardData?.recommendations && dashboardData.recommendations.length > 0 && (
         <div className="mt-8 bg-white rounded-lg shadow p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Learning Recommendations</h3>

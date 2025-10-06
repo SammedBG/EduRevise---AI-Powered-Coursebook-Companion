@@ -1,13 +1,12 @@
 import React from 'react';
-import { useNavigate, Link, useLocation } from 'react-router-dom';
-import { FiLogOut, FiUser, FiBell } from 'react-icons/fi';
+import { useNavigate } from 'react-router-dom';
+import { FiMenu, FiLogOut, FiUser, FiBell } from 'react-icons/fi';
 import AuthContext from '../../contexts/AuthContext';
 import toast from 'react-hot-toast';
 
-const Navbar = () => {
+const Navbar = ({ onMenuClick, sidebarOpen }) => {
   const { user, logout } = React.useContext(AuthContext);
   const navigate = useNavigate();
-  const location = useLocation();
 
   const handleLogout = () => {
     logout();
@@ -19,34 +18,22 @@ const Navbar = () => {
     <nav className="fixed top-0 left-0 right-0 bg-white shadow-sm border-b border-gray-200 z-40">
       <div className="px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
-          {/* Left: Brand */}
-          <Link to="/" className="text-xl font-bold text-gray-900">Study Buddy</Link>
+          {/* Left side */}
+          <div className="flex items-center">
+            <button
+              onClick={onMenuClick}
+              className="p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100 lg:hidden"
+            >
+              <FiMenu className="h-6 w-6" />
+            </button>
+            
+            <div className="ml-4 lg:ml-0">
+              <h1 className="text-xl font-bold text-gray-900">Study Buddy</h1>
+            </div>
+          </div>
 
           {/* Right side */}
           <div className="flex items-center space-x-4">
-            {/* Top nav tabs */}
-            <div className="hidden md:flex items-center space-x-1 mr-4">
-              {[
-                { name: 'Dashboard', href: '/dashboard' },
-                { name: 'Study Materials', href: '/pdfs' },
-                { name: 'AI Chat', href: '/chat' },
-                { name: 'Practice Quiz', href: '/quiz' },
-                { name: 'Videos', href: '/videos' },
-                { name: 'Progress', href: '/progress' }
-              ].map((item) => (
-                <Link
-                  key={item.name}
-                  to={item.href}
-                  className={`px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200 ${
-                    location.pathname.startsWith(item.href)
-                      ? 'bg-blue-50 text-blue-700'
-                      : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
-                  }`}
-                >
-                  {item.name}
-                </Link>
-              ))}
-            </div>
             {/* Notifications */}
             <button className="p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100">
               <FiBell className="h-5 w-5" />

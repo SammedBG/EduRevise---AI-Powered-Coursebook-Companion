@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { FiFileText, FiTrash2, FiSearch, FiPlus } from 'react-icons/fi';
+import { FiUpload, FiFileText, FiTrash2, FiSearch, FiPlus, FiDownload } from 'react-icons/fi';
 import { pdfAPI } from '../../services/api';
-import YouTubeRecommendations from '../YouTube/YouTubeRecommendations';
 import toast from 'react-hot-toast';
 
 const PDFManager = () => {
@@ -11,7 +10,6 @@ const PDFManager = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
-  const [selectedForViewer, setSelectedForViewer] = useState(null);
 
   useEffect(() => {
     fetchPDFs();
@@ -108,22 +106,20 @@ const PDFManager = () => {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {/* Header */}
       <div className="mb-8">
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-white">Study Materials</h1>
-              <p className="mt-2 text-blue-50">
-                Upload and manage your PDF coursebooks and study materials
-              </p>
-            </div>
-            <button
-              onClick={() => setShowUploadModal(true)}
-              className="bg-white text-blue-700 hover:bg-blue-50 px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors duration-200 shadow-sm"
-            >
-              <FiPlus className="h-5 w-5" />
-              <span>Upload PDF</span>
-            </button>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Study Materials</h1>
+            <p className="mt-2 text-gray-600">
+              Upload and manage your PDF coursebooks and study materials
+            </p>
           </div>
+          <button
+            onClick={() => setShowUploadModal(true)}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors duration-200"
+          >
+            <FiPlus className="h-5 w-5" />
+            <span>Upload PDF</span>
+          </button>
         </div>
       </div>
 
@@ -147,10 +143,10 @@ const PDFManager = () => {
       {/* PDF Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredPDFs.map((pdf) => (
-          <div key={pdf.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow duration-200">
+          <div key={pdf.id} className="bg-white rounded-lg shadow hover:shadow-md transition-shadow duration-200">
             <div className="p-6">
               <div className="flex items-start justify-between mb-4">
-                <div className="p-3 bg-red-50 rounded-xl border border-red-100">
+                <div className="p-3 bg-red-100 rounded-lg">
                   <FiFileText className="h-6 w-6 text-red-600" />
                 </div>
                 <button
@@ -173,23 +169,10 @@ const PDFManager = () => {
               </div>
 
               <div className="flex space-x-2">
-                <button
-                  onClick={() => setSelectedForViewer(pdf)}
-                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors duration-200 text-center"
-                >
+                <button className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded text-sm font-medium transition-colors duration-200">
                   View
                 </button>
-                <button
-                  onClick={async () => {
-                    try {
-                      await pdfAPI.process(pdf.id);
-                      toast.success('PDF processed');
-                    } catch (e) {
-                      toast.error('Failed to process PDF');
-                    }
-                  }}
-                  className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-2 rounded-lg text-sm font-medium transition-colors duration-200"
-                >
+                <button className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-2 rounded text-sm font-medium transition-colors duration-200">
                   Process
                 </button>
               </div>
@@ -197,38 +180,6 @@ const PDFManager = () => {
           </div>
         ))}
       </div>
-
-      {/* YouTube Recommendations */}
-      {filteredPDFs.length > 0 && (
-        <div className="mt-8">
-          <YouTubeRecommendations 
-            pdfIds={filteredPDFs.slice(0, 3).map(pdf => pdf.id)} 
-            maxResults={4}
-          />
-        </div>
-      )}
-
-      {/* Inline PDF viewer */}
-      {selectedForViewer && (
-        <div className="mt-8 bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-lg font-semibold text-gray-900">Viewing: {selectedForViewer.originalName}</h3>
-            <button
-              onClick={() => setSelectedForViewer(null)}
-              className="text-sm text-gray-600 hover:text-gray-900"
-            >
-              Close
-            </button>
-          </div>
-          <div className="h-[70vh]">
-            <iframe
-              title="pdf-viewer"
-              src={`http://localhost:5000/${selectedForViewer.path}`}
-              className="w-full h-full rounded-lg border"
-            />
-          </div>
-        </div>
-      )}
 
       {/* Empty State */}
       {filteredPDFs.length === 0 && (

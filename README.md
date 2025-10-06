@@ -14,7 +14,6 @@ A comprehensive web application that helps school students revise from their cou
 ### Nice-to-Have Features ✅
 - **ChatGPT-inspired Chat UI**: Clean, responsive chat interface with message history
 - **RAG Implementation**: PDF text extraction, chunking, and context-aware responses
-- **YouTube Video Recommender**: AI-powered video recommendations based on PDF content
 - **Mobile Responsive**: Fully responsive design for all devices
 - **Real-time Progress Dashboard**: Comprehensive analytics and learning insights
 
