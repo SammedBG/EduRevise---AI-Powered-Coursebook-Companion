@@ -2,24 +2,20 @@ import axios from 'axios';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
-// Create axios instance with cookie-based authentication
+// Create axios instance
 const api = axios.create({
   baseURL: API_BASE_URL,
-  withCredentials: true, // Enable cookies for all requests
   headers: {
     'Content-Type': 'application/json',
   },
 });
 
-// CSRF token storage
-let csrfToken = null;
-
-// Request interceptor to add CSRF token
+// Request interceptor to add auth token
 api.interceptors.request.use(
-  async (config) => {
-    // Add CSRF token for non-GET requests
-    if (config.method !== 'get' && csrfToken) {
-      config.headers['X-CSRF-Token'] = csrfToken;
+  (config) => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
   },
@@ -28,48 +24,17 @@ api.interceptors.request.use(
   }
 );
 
-// Response interceptor to handle auth errors and token refresh
+// Response interceptor to handle auth errors
 api.interceptors.response.use(
   (response) => response,
-  async (error) => {
-    const originalRequest = error.config;
-    
-    // Handle 401 errors (token expired)
-    if (error.response?.status === 401 && !originalRequest._retry) {
-      originalRequest._retry = true;
-      
-      try {
-        // Attempt to refresh the token
-        const refreshResponse = await axios.post(
-          `${API_BASE_URL}/auth/refresh`,
-          {},
-          { withCredentials: true }
-        );
-        
-        // Retry the original request
-        return api(originalRequest);
-      } catch (refreshError) {
-        // Refresh failed, redirect to login
-        window.location.href = '/login';
-        return Promise.reject(refreshError);
-      }
+  (error) => {
+    if (error.response?.status === 401) {
+      localStorage.removeItem('token');
+      window.location.href = '/login';
     }
-    
     return Promise.reject(error);
   }
 );
-
-// Function to get CSRF token
-export const getCSRFToken = async () => {
-  try {
-    const response = await api.get('/csrf-token');
-    csrfToken = response.data.csrfToken;
-    return csrfToken;
-  } catch (error) {
-    console.error('Failed to get CSRF token:', error);
-    return null;
-  }
-};
 
 // Auth API
 export const authAPI = {

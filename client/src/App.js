@@ -12,7 +12,7 @@ import Chat from './components/Chat/Chat';
 import Quiz from './components/Quiz/Quiz';
 import Progress from './components/Progress/Progress';
 import YouTubePage from './components/YouTube/YouTubePage';
-import { authAPI, getCSRFToken } from './services/api';
+import { authAPI } from './services/api';
 
 function App() {
   const [user, setUser] = useState(null);
@@ -20,49 +20,31 @@ function App() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
-    initializeApp();
+    checkAuthStatus();
   }, []);
 
-  const initializeApp = async () => {
+  const checkAuthStatus = async () => {
     try {
-      // Get CSRF token first
-      await getCSRFToken();
-      
-      // Check if user is authenticated via cookies
-      await checkAuthStatus();
+      const token = localStorage.getItem('token');
+      if (token) {
+        const response = await authAPI.getProfile();
+        setUser(response.data.user);
+      }
     } catch (error) {
-      console.error('App initialization error:', error);
+      localStorage.removeItem('token');
     } finally {
       setLoading(false);
     }
   };
 
-  const checkAuthStatus = async () => {
-    try {
-      const response = await authAPI.getProfile();
-      setUser(response.data.user);
-    } catch (error) {
-      // User is not authenticated or token expired
-      setUser(null);
-    }
-  };
-
-  const login = async (userData) => {
+  const login = (userData, token) => {
+    localStorage.setItem('token', token);
     setUser(userData);
-    // Refresh CSRF token after login
-    await getCSRFToken();
   };
 
-  const logout = async () => {
-    try {
-      await authAPI.logout();
-    } catch (error) {
-      console.error('Logout error:', error);
-    } finally {
-      setUser(null);
-      // Clear CSRF token
-      window.csrfToken = null;
-    }
+  const logout = () => {
+    localStorage.removeItem('token');
+    setUser(null);
   };
 
   if (loading) {
@@ -92,13 +74,7 @@ function App() {
   }
 
   return (
-    <AuthContext.Provider value={{ 
-      user, 
-      login, 
-      logout, 
-      isAuthenticated: !!user,
-      loading 
-    }}>
+    <AuthContext.Provider value={{ user, login, logout }}>
       <Router>
         <div className="min-h-screen bg-gray-50">
           <Toaster position="top-right" />

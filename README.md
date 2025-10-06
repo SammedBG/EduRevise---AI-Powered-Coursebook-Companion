@@ -1,4 +1,4 @@
-#EduRevise---AI-Powered-Coursebook-Companion
+# Study Buddy - AI-Powered Learning Companion
 
 A comprehensive web application that helps school students revise from their coursebooks using AI-powered features including PDF processing, intelligent chat, quiz generation, and progress tracking.
 
@@ -31,8 +31,7 @@ A comprehensive web application that helps school students revise from their cou
 ### Backend
 - **Node.js** with Express.js
 - **MongoDB** with Mongoose ODM
-- **Secure JWT Authentication** with HTTP-only cookies
-- **CSRF Protection** for enhanced security
+- **JWT** for authentication
 - **Multer** for file uploads
 - **PDF-Parse** for PDF text extraction
 - **OpenAI API** integration (configurable)
@@ -78,10 +77,8 @@ nano server/.env
 ```env
 PORT=5000
 MONGODB_URI=mongodb://localhost:27017/study-buddy
-JWT_SECRET=your_super_secret_jwt_key_minimum_32_characters_long
-REFRESH_SECRET=your_super_secret_refresh_key_minimum_32_characters_long
 OPENAI_API_KEY=your_openai_api_key_here
-YOUTUBE_API_KEY=your_youtube_api_key_here
+JWT_SECRET=your_jwt_secret_here
 NODE_ENV=development
 ```
 

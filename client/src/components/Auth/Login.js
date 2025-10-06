@@ -25,7 +25,7 @@ const Login = ({ onLogin }) => {
 
     try {
       const response = await authAPI.login(formData);
-      await onLogin(response.data.user);
+      onLogin(response.data.user, response.data.token);
       toast.success('Welcome back!');
     } catch (error) {
       toast.error(error.response?.data?.error || 'Login failed');

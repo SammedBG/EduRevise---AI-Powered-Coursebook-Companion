@@ -4,7 +4,7 @@ const path = require('path');
 const fs = require('fs').promises;
 const pdfParse = require('pdf-parse');
 const PDF = require('../models/PDF');
-const { authenticateToken } = require('../middleware/auth');
+const { authenticateToken } = require('./auth');
 const router = express.Router();
 
 // Configure multer for file uploads

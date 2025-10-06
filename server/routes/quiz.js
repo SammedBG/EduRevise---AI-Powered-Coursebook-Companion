@@ -2,7 +2,7 @@ const express = require('express');
 const Quiz = require('../models/Quiz');
 const PDF = require('../models/PDF');
 const Progress = require('../models/Progress');
-const { authenticateToken } = require('../middleware/auth');
+const { authenticateToken } = require('./auth');
 const router = express.Router();
 
 // Generate quiz from PDFs
