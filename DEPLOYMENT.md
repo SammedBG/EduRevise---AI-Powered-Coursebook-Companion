@@ -90,7 +90,7 @@ npm run dev
 3. **Set Environment Variables**:
    ```env
    PORT=5000
-   MONGODB_URI=your-mongodb-atlas-uri
+   MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/study-buddy
    JWT_SECRET=your-super-secret-jwt-key
    OPENAI_API_KEY=your-openai-api-key
    NODE_ENV=production

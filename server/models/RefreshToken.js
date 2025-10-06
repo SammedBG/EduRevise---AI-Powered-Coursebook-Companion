@@ -14,30 +14,24 @@ const refreshTokenSchema = new mongoose.Schema({
   expiresAt: {
     type: Date,
     required: true,
-    default: Date.now,
-    expires: 604800 // 7 days in seconds (auto-delete expired tokens)
+    index: { expireAfterSeconds: 0 } // TTL index for automatic cleanup
   },
-  userAgent: {
-    type: String,
-    default: 'Unknown'
-  },
-  ipAddress: {
-    type: String,
-    default: 'Unknown'
+  createdAt: {
+    type: Date,
+    default: Date.now
   },
   isRevoked: {
     type: Boolean,
     default: false
   },
-  createdAt: {
-    type: Date,
-    default: Date.now
-  }
+  userAgent: String,
+  ipAddress: String
 });
 
-// Index for efficient cleanup and queries
+// Index for efficient queries
 refreshTokenSchema.index({ userId: 1, isRevoked: 1 });
-refreshTokenSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
+refreshTokenSchema.index({ token: 1 });
+refreshTokenSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 }); // TTL index
 
 // Static method to create a new refresh token
 refreshTokenSchema.statics.createToken = async function(userId, userAgent, ipAddress) {
@@ -75,6 +69,15 @@ refreshTokenSchema.statics.revokeAllUserTokens = async function(userId) {
     { userId, isRevoked: false },
     { isRevoked: true }
   );
+};
+
+// Static method to find valid token
+refreshTokenSchema.statics.findValidToken = async function(token) {
+  return await this.findOne({
+    token,
+    isRevoked: false,
+    expiresAt: { $gt: new Date() }
+  });
 };
 
 module.exports = mongoose.model('RefreshToken', refreshTokenSchema);
