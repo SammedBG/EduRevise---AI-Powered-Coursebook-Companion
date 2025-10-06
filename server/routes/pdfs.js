@@ -46,6 +46,25 @@ router.post('/upload', authenticateToken, upload.single('pdf'), async (req, res)
     const pdfBuffer = await fs.readFile(req.file.path);
     const pdfData = await pdfParse(pdfBuffer);
 
+    // Helper to parse PDF date strings like D:20250930163416Z safely
+    const parsePdfDate = (value) => {
+      if (!value) return new Date();
+      if (value instanceof Date) return value;
+      if (typeof value !== 'string') return new Date();
+      // Strip leading 'D:' if present
+      const cleaned = value.startsWith('D:') ? value.slice(2) : value;
+      // Try ISO if simple
+      const iso = Date.parse(value);
+      if (!Number.isNaN(iso)) return new Date(iso);
+      // Patterns like YYYYMMDDHHmmSSZ or without Z
+      const match = cleaned.match(/^(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})/);
+      if (match) {
+        const [_, y, m, d, hh, mm, ss] = match;
+        return new Date(Date.UTC(Number(y), Number(m) - 1, Number(d), Number(hh), Number(mm), Number(ss)));
+      }
+      return new Date();
+    };
+
     // Create PDF document
     const pdf = new PDF({
       filename: req.file.filename,
@@ -58,7 +77,7 @@ router.post('/upload', authenticateToken, upload.single('pdf'), async (req, res)
         author: pdfData.info?.Author || 'Unknown',
         subject: pdfData.info?.Subject || 'General',
         pages: pdfData.numpages,
-        createdAt: pdfData.info?.CreationDate || new Date()
+        createdAt: parsePdfDate(pdfData.info?.CreationDate)
       },
       content: {
         extractedText: pdfData.text,
@@ -71,7 +90,7 @@ router.post('/upload', authenticateToken, upload.single('pdf'), async (req, res)
     res.status(201).json({
       message: 'PDF uploaded successfully',
       pdf: {
-        id: pdf._id,
+        id: String(pdf._id),
         filename: pdf.filename,
         originalName: pdf.originalName,
         size: pdf.size,
@@ -95,7 +114,18 @@ router.get('/', authenticateToken, async (req, res) => {
       ]
     }).sort({ uploadDate: -1 });
 
-    res.json({ pdfs });
+    // Normalize id field for frontend
+    const normalized = pdfs.map(p => ({
+      id: String(p._id),
+      filename: p.filename,
+      originalName: p.originalName,
+      size: p.size,
+      metadata: p.metadata,
+      uploadDate: p.uploadDate,
+      isPublic: p.isPublic
+    }));
+
+    res.json({ pdfs: normalized });
   } catch (error) {
     console.error('Get PDFs error:', error);
     res.status(500).json({ error: 'Failed to fetch PDFs' });

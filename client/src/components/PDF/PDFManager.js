@@ -107,20 +107,22 @@ const PDFManager = () => {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {/* Header */}
       <div className="mb-8">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Study Materials</h1>
-            <p className="mt-2 text-gray-600">
-              Upload and manage your PDF coursebooks and study materials
-            </p>
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-white">Study Materials</h1>
+              <p className="mt-2 text-blue-50">
+                Upload and manage your PDF coursebooks and study materials
+              </p>
+            </div>
+            <button
+              onClick={() => setShowUploadModal(true)}
+              className="bg-white text-blue-700 hover:bg-blue-50 px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors duration-200 shadow-sm"
+            >
+              <FiPlus className="h-5 w-5" />
+              <span>Upload PDF</span>
+            </button>
           </div>
-          <button
-            onClick={() => setShowUploadModal(true)}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors duration-200"
-          >
-            <FiPlus className="h-5 w-5" />
-            <span>Upload PDF</span>
-          </button>
         </div>
       </div>
 
@@ -144,10 +146,10 @@ const PDFManager = () => {
       {/* PDF Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredPDFs.map((pdf) => (
-          <div key={pdf.id} className="bg-white rounded-lg shadow hover:shadow-md transition-shadow duration-200">
+          <div key={pdf.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow duration-200">
             <div className="p-6">
               <div className="flex items-start justify-between mb-4">
-                <div className="p-3 bg-red-100 rounded-lg">
+                <div className="p-3 bg-red-50 rounded-xl border border-red-100">
                   <FiFileText className="h-6 w-6 text-red-600" />
                 </div>
                 <button
@@ -170,10 +172,10 @@ const PDFManager = () => {
               </div>
 
               <div className="flex space-x-2">
-                <button className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded text-sm font-medium transition-colors duration-200">
+                <button className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors duration-200">
                   View
                 </button>
-                <button className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-2 rounded text-sm font-medium transition-colors duration-200">
+                <button className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-2 rounded-lg text-sm font-medium transition-colors duration-200">
                   Process
                 </button>
               </div>

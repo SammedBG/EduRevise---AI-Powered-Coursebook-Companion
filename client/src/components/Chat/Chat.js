@@ -1,7 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { FiSend, FiPlus, FiMessageSquare } from 'react-icons/fi';
+import { FiSend, FiPlus, FiMessageSquare, FiFileText } from 'react-icons/fi';
+import { Document, Page, pdfjs } from 'react-pdf';
+import 'react-pdf/dist/Page/AnnotationLayer.css';
+import 'react-pdf/dist/Page/TextLayer.css';
 import { chatAPI } from '../../services/api';
 import toast from 'react-hot-toast';
+
+pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.js`;
 
 const Chat = () => {
   const [chats, setChats] = useState([]);
@@ -106,9 +111,9 @@ const Chat = () => {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="flex h-[calc(100vh-8rem)] bg-white rounded-lg shadow">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 h-[calc(100vh-8rem)]">
         {/* Chat List Sidebar */}
-        <div className="w-1/3 border-r border-gray-200 flex flex-col">
+        <div className="bg-white rounded-lg shadow border border-gray-100 flex flex-col">
           <div className="p-4 border-b border-gray-200">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold text-gray-900">Chats</h2>
@@ -156,8 +161,27 @@ const Chat = () => {
           </div>
         </div>
 
+        {/* PDF Viewer (split view) */}
+        <div className="hidden lg:flex bg-white rounded-lg shadow border border-gray-100 flex-col">
+          <div className="p-4 border-b border-gray-200 flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <FiFileText className="h-5 w-5 text-red-600" />
+              <h3 className="text-lg font-semibold text-gray-900">PDF Viewer</h3>
+            </div>
+            <div className="text-sm text-gray-500">
+              Select a PDF from Study Materials and open it to view alongside chat.
+            </div>
+          </div>
+          <div className="flex-1 overflow-auto flex items-center justify-center p-4">
+            <div className="text-center text-gray-400">
+              <FiFileText className="h-10 w-10 mx-auto mb-2" />
+              <p>No PDF opened</p>
+            </div>
+          </div>
+        </div>
+
         {/* Chat Window */}
-        <div className="flex-1 flex flex-col">
+        <div className="lg:col-span-2 bg-white rounded-lg shadow border border-gray-100 flex flex-col">
           {currentChat ? (
             <>
               {/* Chat Header */}
@@ -171,7 +195,7 @@ const Chat = () => {
               </div>
 
               {/* Messages */}
-              <div className="flex-1 overflow-y-auto p-4 space-y-4">
+              <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
                 {messages.length === 0 ? (
                   <div className="text-center py-8">
                     <FiMessageSquare className="h-12 w-12 text-gray-400 mx-auto mb-4" />
@@ -186,18 +210,16 @@ const Chat = () => {
                       key={index}
                       className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
                     >
-                      <div
-                        className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
-                          message.role === 'user'
-                            ? 'bg-blue-600 text-white'
-                            : 'bg-gray-100 text-gray-900'
-                        }`}
-                      >
+                      <div className={`max-w-xs lg:max-w-md px-4 py-3 rounded-2xl shadow-sm ${
+                        message.role === 'user'
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-white border border-gray-200'
+                      }`}>
                         <p className="text-sm">{message.content}</p>
                         
                         {/* Citations for assistant messages */}
                         {message.citations && message.citations.length > 0 && (
-                          <div className="mt-2 pt-2 border-t border-gray-200">
+                          <div className={`mt-2 pt-2 ${message.role === 'user' ? 'border-blue-500/30' : 'border-gray-200'} border-t`}>
                             <p className="text-xs text-gray-500 mb-1">Sources:</p>
                             {message.citations.map((citation, idx) => (
                               <p key={idx} className="text-xs text-gray-400">
@@ -217,7 +239,7 @@ const Chat = () => {
                 
                 {sending && (
                   <div className="flex justify-start">
-                    <div className="bg-gray-100 text-gray-900 px-4 py-2 rounded-lg">
+                    <div className="bg-white border border-gray-200 text-gray-900 px-4 py-2 rounded-2xl shadow-sm">
                       <div className="flex items-center space-x-2">
                         <div className="spinner"></div>
                         <span className="text-sm">Thinking...</span>
@@ -230,21 +252,21 @@ const Chat = () => {
               </div>
 
               {/* Message Input */}
-              <div className="p-4 border-t border-gray-200">
+              <div className="p-4 border-t border-gray-200 bg-white">
                 <div className="flex space-x-2">
                   <textarea
                     value={newMessage}
                     onChange={(e) => setNewMessage(e.target.value)}
                     onKeyPress={handleKeyPress}
                     placeholder="Type your message..."
-                    className="flex-1 resize-none border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="flex-1 resize-none border border-gray-300 rounded-xl px-3 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     rows={1}
                     disabled={sending}
                   />
                   <button
                     onClick={sendMessage}
                     disabled={!newMessage.trim() || sending}
-                    className="bg-blue-600 hover:bg-blue-700 text-white p-2 rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 rounded-xl transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <FiSend className="h-5 w-5" />
                   </button>
@@ -252,7 +274,7 @@ const Chat = () => {
               </div>
             </>
           ) : (
-            <div className="flex-1 flex items-center justify-center">
+            <div className="flex-1 flex items-center justify-center bg-white rounded-lg">
               <div className="text-center">
                 <FiMessageSquare className="h-16 w-16 text-gray-400 mx-auto mb-4" />
                 <h3 className="text-lg font-medium text-gray-900 mb-2">
