@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { FiYoutube, FiPlay, FiClock, FiEye, FiExternalLink } from 'react-icons/fi';
 import { youtubeAPI } from '../../services/api';
 import toast from 'react-hot-toast';
@@ -8,23 +8,17 @@ const YouTubeRecommendations = ({ pdfIds, maxResults = 5 }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    if (pdfIds && pdfIds.length > 0) {
-      fetchRecommendations();
-    }
-  }, [pdfIds, maxResults]);
-
-  const fetchRecommendations = async () => {
+  const fetchRecommendations = useCallback(async () => {
     setLoading(true);
     setError(null);
 
     try {
       let response;
       
-      if (pdfIds.length === 1) {
+      if (pdfIds && pdfIds.length === 1) {
         response = await youtubeAPI.getRecommendations(pdfIds[0], maxResults);
       } else {
-        response = await youtubeAPI.getBatchRecommendations(pdfIds, maxResults);
+        response = await youtubeAPI.getBatchRecommendations(pdfIds || [], maxResults);
       }
 
       setRecommendations(response.data.recommendations || []);
@@ -39,7 +33,13 @@ const YouTubeRecommendations = ({ pdfIds, maxResults = 5 }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [pdfIds, maxResults]);
+
+  useEffect(() => {
+    if (pdfIds && pdfIds.length > 0) {
+      fetchRecommendations();
+    }
+  }, [pdfIds, maxResults, fetchRecommendations]);
 
   const formatDuration = (publishedAt) => {
     const date = new Date(publishedAt);

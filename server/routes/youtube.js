@@ -4,11 +4,11 @@ const PDF = require('../models/PDF');
 const { authenticateToken } = require('./auth');
 const router = express.Router();
 
-// Initialize YouTube Data API
-const youtube = google.youtube({
-  version: 'v3',
-  auth: process.env.YOUTUBE_API_KEY
-});
+// Initialize YouTube Data API (may be undefined if key missing)
+const youtubeApiKey = process.env.YOUTUBE_API_KEY;
+const youtube = youtubeApiKey
+  ? google.youtube({ version: 'v3', auth: youtubeApiKey })
+  : null;
 
 // Get YouTube recommendations based on PDF content
 router.get('/recommendations/:pdfId', authenticateToken, async (req, res) => {
@@ -246,41 +246,55 @@ function generateComprehensiveSearchQueries(pdfs, keywords) {
 
 // Helper function to get YouTube recommendations
 async function getYouTubeRecommendations(searchQueries, maxResults) {
+  // If API key missing or client disabled, return mock immediately
+  if (!youtube) {
+    return getMockYouTubeRecommendations('no-key');
+  }
+
   const recommendations = [];
-  
-  for (const query of searchQueries.slice(0, 3)) {
+  const cappedResults = Math.min(Number(maxResults) || 5, 5);
+  const queries = (searchQueries || []).slice(0, 2); // reduce quota usage
+
+  for (const query of queries) {
     try {
       const response = await youtube.search.list({
         part: 'snippet',
         q: query,
         type: 'video',
-        maxResults: Math.ceil(maxResults / 3),
+        maxResults: Math.max(1, Math.ceil(cappedResults / queries.length)),
         order: 'relevance',
-        videoDuration: 'medium', // 4-20 minutes
-        videoDefinition: 'high',
+        videoDuration: 'medium',
         relevanceLanguage: 'en'
       });
-      
-      if (response.data.items) {
-        response.data.items.forEach(item => {
-          recommendations.push({
-            videoId: item.id.videoId,
-            title: item.snippet.title,
-            description: item.snippet.description,
-            thumbnail: item.snippet.thumbnails.medium?.url || item.snippet.thumbnails.default?.url,
-            channelTitle: item.snippet.channelTitle,
-            publishedAt: item.snippet.publishedAt,
-            searchQuery: query,
-            url: `https://www.youtube.com/watch?v=${item.id.videoId}`
-          });
+
+      const items = response?.data?.items || [];
+      for (const item of items) {
+        if (!item?.id?.videoId) continue;
+        recommendations.push({
+          videoId: item.id.videoId,
+          title: item.snippet.title,
+          description: item.snippet.description,
+          thumbnail: item.snippet.thumbnails?.medium?.url || item.snippet.thumbnails?.default?.url,
+          channelTitle: item.snippet.channelTitle,
+          publishedAt: item.snippet.publishedAt,
+          searchQuery: query,
+          url: `https://www.youtube.com/watch?v=${item.id.videoId}`
         });
       }
     } catch (error) {
+      const msg = error?.errors?.[0]?.reason || error?.message || '';
       console.error(`YouTube API error for query "${query}":`, error.message);
+      // If quota exceeded (or any 403), immediately return mock to avoid loops and memory issues
+      if (msg.includes('quota') || /quota/i.test(error.message) || error.code === 403) {
+        return getMockYouTubeRecommendations('quota');
+      }
     }
   }
-  
-  return recommendations.slice(0, maxResults);
+
+  if (recommendations.length === 0) {
+    return getMockYouTubeRecommendations('empty');
+  }
+  return recommendations.slice(0, cappedResults);
 }
 
 // Mock YouTube recommendations for when API is not configured

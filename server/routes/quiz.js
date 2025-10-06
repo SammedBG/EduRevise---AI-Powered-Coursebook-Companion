@@ -14,14 +14,13 @@ router.post('/generate', authenticateToken, async (req, res) => {
       return res.status(400).json({ error: 'At least one PDF must be selected' });
     }
 
-    // Get PDFs and their content
+    // Get PDFs and their content (allow even if not processed yet)
     const pdfs = await PDF.find({ 
-      _id: { $in: pdfIds },
-      'content.processed': true 
+      _id: { $in: pdfIds }
     });
 
     if (pdfs.length === 0) {
-      return res.status(400).json({ error: 'No processed PDFs found' });
+      return res.status(400).json({ error: 'No PDFs found' });
     }
 
     // Extract content for quiz generation
@@ -196,7 +195,10 @@ async function generateQuestions(content, questionTypes, difficulty, numQuestion
   for (let i = 0; i < Math.min(numQuestions, contentSentences.length); i++) {
     const sentence = contentSentences[i].trim();
     const questionType = questionTypes[Math.floor(Math.random() * questionTypes.length)];
-    
+    const qDifficulty = difficulty === 'mixed' 
+      ? ['easy','medium','hard'][Math.floor(Math.random()*3)] 
+      : (['easy','medium','hard'].includes(difficulty) ? difficulty : 'medium');
+
     let question;
     
     switch (questionType) {
@@ -212,7 +214,7 @@ async function generateQuestions(content, questionTypes, difficulty, numQuestion
           ],
           correctAnswer: 'Option B: Concept 2',
           explanation: 'This is the correct answer because...',
-          difficulty,
+          difficulty: qDifficulty,
           points: 1,
           source: {
             pdfId: pdfs[Math.floor(Math.random() * pdfs.length)]._id,
@@ -228,7 +230,7 @@ async function generateQuestions(content, questionTypes, difficulty, numQuestion
           question: `Explain the concept mentioned in this context: "${sentence.substring(0, 100)}..."`,
           correctAnswer: 'A short answer explaining the concept',
           explanation: 'This concept is important because...',
-          difficulty,
+          difficulty: qDifficulty,
           points: 2,
           source: {
             pdfId: pdfs[Math.floor(Math.random() * pdfs.length)]._id,
@@ -244,7 +246,7 @@ async function generateQuestions(content, questionTypes, difficulty, numQuestion
           question: `Discuss in detail the topic covered in this context: "${sentence.substring(0, 100)}..."`,
           correctAnswer: 'A detailed explanation covering multiple aspects',
           explanation: 'This topic is comprehensive and includes...',
-          difficulty,
+          difficulty: qDifficulty,
           points: 5,
           source: {
             pdfId: pdfs[Math.floor(Math.random() * pdfs.length)]._id,

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { FiTrendingUp, FiTarget, FiClock, FiBookOpen, FiAward } from 'react-icons/fi';
 import { progressAPI } from '../../services/api';
 import toast from 'react-hot-toast';
@@ -8,11 +8,7 @@ const Progress = () => {
   const [loading, setLoading] = useState(true);
   const [selectedPeriod, setSelectedPeriod] = useState('30d');
 
-  useEffect(() => {
-    fetchProgressData();
-  }, [selectedPeriod]);
-
-  const fetchProgressData = async () => {
+  const fetchProgressData = useCallback(async () => {
     try {
       const [dashboardResponse, analyticsResponse] = await Promise.all([
         progressAPI.getDashboard(),
@@ -24,12 +20,17 @@ const Progress = () => {
         analytics: analyticsResponse.data
       });
     } catch (error) {
+      // keep toast but ensure function identity is stable
       toast.error('Failed to load progress data');
       console.error('Progress error:', error);
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedPeriod]);
+
+  useEffect(() => {
+    fetchProgressData();
+  }, [fetchProgressData]);
 
   if (loading) {
     return (

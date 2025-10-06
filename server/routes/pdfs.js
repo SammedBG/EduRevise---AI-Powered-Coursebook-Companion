@@ -93,6 +93,7 @@ router.post('/upload', authenticateToken, upload.single('pdf'), async (req, res)
         id: String(pdf._id),
         filename: pdf.filename,
         originalName: pdf.originalName,
+        path: pdf.path,
         size: pdf.size,
         metadata: pdf.metadata,
         uploadDate: pdf.uploadDate
@@ -119,6 +120,7 @@ router.get('/', authenticateToken, async (req, res) => {
       id: String(p._id),
       filename: p.filename,
       originalName: p.originalName,
+      path: p.path,
       size: p.size,
       metadata: p.metadata,
       uploadDate: p.uploadDate,
@@ -230,8 +232,14 @@ router.post('/:id/process', authenticateToken, async (req, res) => {
       return res.json({ message: 'PDF already processed' });
     }
 
-    // Simple chunking - split by paragraphs and limit chunk size
-    const text = pdf.content.extractedText;
+    // Simple chunking - split by paragraphs and limit chunk size. If no text extracted, fallback to empty.
+    const text = pdf.content.extractedText || '';
+    if (text.trim().length === 0) {
+      pdf.content.chunks = [];
+      pdf.content.processed = true;
+      await pdf.save();
+      return res.json({ message: 'PDF had no extractable text. Marked as processed with 0 chunks.', chunksCreated: 0 });
+    }
     const chunks = [];
     const maxChunkSize = 1000; // characters
     const overlap = 100; // characters

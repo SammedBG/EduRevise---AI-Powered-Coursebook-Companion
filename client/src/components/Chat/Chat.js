@@ -1,19 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { FiSend, FiPlus, FiMessageSquare, FiFileText } from 'react-icons/fi';
-import { Document, Page, pdfjs } from 'react-pdf';
-import 'react-pdf/dist/Page/AnnotationLayer.css';
-import 'react-pdf/dist/Page/TextLayer.css';
 import { chatAPI } from '../../services/api';
 import toast from 'react-hot-toast';
-
-pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.js`;
 
 const Chat = () => {
   const [chats, setChats] = useState([]);
   const [currentChat, setCurrentChat] = useState(null);
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
-  const [loading, setLoading] = useState(false);
+  // loading state removed (unused)
   const [sending, setSending] = useState(false);
   const messagesEndRef = useRef(null);
 
@@ -49,8 +44,9 @@ const Chat = () => {
 
   const createNewChat = async () => {
     try {
+      const defaultTitle = `Chat ${new Date().toLocaleString()}`;
       const response = await chatAPI.create({
-        title: 'New Chat',
+        title: defaultTitle,
         pdfContext: []
       });
       setChats([response.data.chat, ...chats]);

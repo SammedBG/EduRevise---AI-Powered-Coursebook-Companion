@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FiUpload, FiFileText, FiTrash2, FiSearch, FiPlus, FiDownload } from 'react-icons/fi';
+import { FiFileText, FiTrash2, FiSearch, FiPlus } from 'react-icons/fi';
 import { pdfAPI } from '../../services/api';
 import YouTubeRecommendations from '../YouTube/YouTubeRecommendations';
 import toast from 'react-hot-toast';
@@ -11,6 +11,7 @@ const PDFManager = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
+  const [selectedForViewer, setSelectedForViewer] = useState(null);
 
   useEffect(() => {
     fetchPDFs();
@@ -172,10 +173,23 @@ const PDFManager = () => {
               </div>
 
               <div className="flex space-x-2">
-                <button className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors duration-200">
+                <button
+                  onClick={() => setSelectedForViewer(pdf)}
+                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors duration-200 text-center"
+                >
                   View
                 </button>
-                <button className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-2 rounded-lg text-sm font-medium transition-colors duration-200">
+                <button
+                  onClick={async () => {
+                    try {
+                      await pdfAPI.process(pdf.id);
+                      toast.success('PDF processed');
+                    } catch (e) {
+                      toast.error('Failed to process PDF');
+                    }
+                  }}
+                  className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-2 rounded-lg text-sm font-medium transition-colors duration-200"
+                >
                   Process
                 </button>
               </div>
@@ -191,6 +205,28 @@ const PDFManager = () => {
             pdfIds={filteredPDFs.slice(0, 3).map(pdf => pdf.id)} 
             maxResults={4}
           />
+        </div>
+      )}
+
+      {/* Inline PDF viewer */}
+      {selectedForViewer && (
+        <div className="mt-8 bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-lg font-semibold text-gray-900">Viewing: {selectedForViewer.originalName}</h3>
+            <button
+              onClick={() => setSelectedForViewer(null)}
+              className="text-sm text-gray-600 hover:text-gray-900"
+            >
+              Close
+            </button>
+          </div>
+          <div className="h-[70vh]">
+            <iframe
+              title="pdf-viewer"
+              src={`http://localhost:5000/${selectedForViewer.path}`}
+              className="w-full h-full rounded-lg border"
+            />
+          </div>
         </div>
       )}
 
