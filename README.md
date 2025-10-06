@@ -1,4 +1,4 @@
-# Study Buddy - AI-Powered Learning Companion
+#EduRevise---AI-Powered-Coursebook-Companion
 
 A comprehensive web application that helps school students revise from their coursebooks using AI-powered features including PDF processing, intelligent chat, quiz generation, and progress tracking.
 
