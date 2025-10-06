@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { FiSend, FiPlus, FiMessageSquare } from 'react-icons/fi';
-import { chatAPI } from '../../services/api';
+import { chatAPI, pdfAPI } from '../../services/api';
+import PDFViewer from '../PDF/PDFViewer';
 import toast from 'react-hot-toast';
 
 const Chat = () => {
@@ -11,9 +12,13 @@ const Chat = () => {
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
   const messagesEndRef = useRef(null);
+  const [pdfs, setPdfs] = useState([]);
+  const [showViewer, setShowViewer] = useState(false);
+  const [selectedPdfId, setSelectedPdfId] = useState(null);
 
   useEffect(() => {
     fetchChats();
+    fetchPDFs();
   }, []);
 
   useEffect(() => {
@@ -40,6 +45,13 @@ const Chat = () => {
     } catch (error) {
       toast.error('Failed to load chats');
     }
+  };
+
+  const fetchPDFs = async () => {
+    try {
+      const res = await pdfAPI.getAll();
+      setPdfs(res.data.pdfs);
+    } catch (e) {}
   };
 
   const createNewChat = async () => {
@@ -156,22 +168,39 @@ const Chat = () => {
           </div>
         </div>
 
-        {/* Chat Window */}
-        <div className="flex-1 flex flex-col">
+        {/* Chat Window + Optional PDF Viewer */}
+        <div className={`flex-1 flex ${showViewer ? 'flex-row' : 'flex-col'}`}>
           {currentChat ? (
             <>
               {/* Chat Header */}
-              <div className="p-4 border-b border-gray-200">
+              <div className="p-4 border-b border-gray-200 flex items-center justify-between">
                 <h3 className="text-lg font-semibold text-gray-900">
                   {currentChat.title}
                 </h3>
-                <p className="text-sm text-gray-500">
-                  {messages.length} messages
-                </p>
+                <div className="flex items-center space-x-2">
+                  <select
+                    className="border border-gray-300 rounded px-2 py-1 text-sm"
+                    value={selectedPdfId || ''}
+                    onChange={(e) => setSelectedPdfId(e.target.value || null)}
+                  >
+                    <option value="">No PDF</option>
+                    {pdfs.map(pdf => (
+                      <option key={pdf._id || pdf.id} value={pdf._id || pdf.id}>
+                        {pdf.originalName}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    onClick={() => setShowViewer(v => !v)}
+                    className="text-sm px-3 py-1 rounded bg-gray-100 hover:bg-gray-200"
+                  >
+                    {showViewer ? 'Hide PDF' : 'Show PDF'}
+                  </button>
+                </div>
               </div>
 
               {/* Messages */}
-              <div className="flex-1 overflow-y-auto p-4 space-y-4">
+              <div className={`${showViewer ? 'w-1/2' : 'w-full'} flex-1 overflow-y-auto p-4 space-y-4`}>
                 {messages.length === 0 ? (
                   <div className="text-center py-8">
                     <FiMessageSquare className="h-12 w-12 text-gray-400 mx-auto mb-4" />
@@ -229,8 +258,23 @@ const Chat = () => {
                 <div ref={messagesEndRef} />
               </div>
 
+              {/* PDF Viewer side panel */}
+              {showViewer && (
+                <div className="w-1/2 border-l border-gray-200">
+                  {(() => {
+                    const apiBase = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+                    const serverOrigin = apiBase.replace(/\/?api\/?$/, '');
+                    const selected = pdfs.find(p => (p._id || p.id) === selectedPdfId);
+                    const fileUrl = selected ? `${serverOrigin}/uploads/pdfs/${selected.filename}` : null;
+                    return (
+                      <PDFViewer fileUrl={fileUrl} />
+                    );
+                  })()}
+                </div>
+              )}
+
               {/* Message Input */}
-              <div className="p-4 border-t border-gray-200">
+              <div className="w-full p-4 border-t border-gray-200">
                 <div className="flex space-x-2">
                   <textarea
                     value={newMessage}

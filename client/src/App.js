@@ -3,7 +3,6 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { Toaster } from 'react-hot-toast';
 import AuthContext from './contexts/AuthContext';
 import Navbar from './components/Layout/Navbar';
-import Hero from './components/Layout/Hero';
 import Login from './components/Auth/Login';
 import Register from './components/Auth/Register';
 import Dashboard from './components/Dashboard/Dashboard';
@@ -81,23 +80,20 @@ function App() {
           {/* Navbar */}
           <Navbar />
 
-          {/* Main Content */}
-          <div className={`transition-all duration-300 ml-0`}>
-            <main className="pt-16 min-h-screen">
-              <Routes>
-                <Route path="/" element={<Dashboard />} />
-                <Route path="/dashboard" element={<Dashboard />} />
-                <Route path="/pdfs" element={<PDFManager />} />
-                <Route path="/chat" element={<Chat />} />
-                <Route path="/chat/:chatId" element={<Chat />} />
-                <Route path="/quiz" element={<Quiz />} />
-                <Route path="/quiz/:quizId" element={<Quiz />} />
-                <Route path="/progress" element={<Progress />} />
-                <Route path="/videos" element={<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">Videos coming soon</div>} />
-                <Route path="*" element={<Navigate to="/" replace />} />
-              </Routes>
-            </main>
-          </div>
+          {/* Main Content - full width pages */}
+          <main className="pt-20 min-h-screen">
+            <Routes>
+              <Route path="/" element={<Dashboard />} />
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/pdfs" element={<PDFManager />} />
+              <Route path="/chat" element={<Chat />} />
+              <Route path="/chat/:chatId" element={<Chat />} />
+              <Route path="/quiz" element={<Quiz />} />
+              <Route path="/quiz/:quizId" element={<Quiz />} />
+              <Route path="/progress" element={<Progress />} />
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </main>
         </div>
       </Router>
     </AuthContext.Provider>

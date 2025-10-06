@@ -14,14 +14,11 @@ router.post('/generate', authenticateToken, async (req, res) => {
       return res.status(400).json({ error: 'At least one PDF must be selected' });
     }
 
-    // Get PDFs and their content
-    const pdfs = await PDF.find({ 
-      _id: { $in: pdfIds },
-      'content.processed': true 
-    });
+    // Get PDFs and their content (allow unprocessed PDFs too)
+    const pdfs = await PDF.find({ _id: { $in: pdfIds } });
 
     if (pdfs.length === 0) {
-      return res.status(400).json({ error: 'No processed PDFs found' });
+      return res.status(400).json({ error: 'No PDFs found for the provided ids' });
     }
 
     // Extract content for quiz generation
@@ -29,9 +26,16 @@ router.post('/generate', authenticateToken, async (req, res) => {
     const contentByPdf = {};
 
     pdfs.forEach(pdf => {
-      contentByPdf[pdf._id] = pdf.content.extractedText;
-      allContent += pdf.content.extractedText + '\n\n';
+      const text = (pdf.content && pdf.content.extractedText) ? pdf.content.extractedText : '';
+      contentByPdf[pdf._id] = text;
+      if (text && text.trim().length > 0) {
+        allContent += text + '\n\n';
+      }
     });
+
+    if (!allContent || allContent.trim().length < 50) {
+      return res.status(400).json({ error: 'Not enough text content in selected PDFs to generate a quiz. Please process PDFs first or upload PDFs with selectable text.' });
+    }
 
     // Generate questions (mock implementation)
     const questions = await generateQuestions(allContent, questionTypes, difficulty, numQuestions, pdfs);
@@ -196,6 +200,11 @@ async function generateQuestions(content, questionTypes, difficulty, numQuestion
   for (let i = 0; i < Math.min(numQuestions, contentSentences.length); i++) {
     const sentence = contentSentences[i].trim();
     const questionType = questionTypes[Math.floor(Math.random() * questionTypes.length)];
+    // Ensure per-question difficulty is valid for schema
+    const allowedDifficulties = ['easy', 'medium', 'hard'];
+    const questionDifficulty = allowedDifficulties.includes(difficulty)
+      ? difficulty
+      : allowedDifficulties[i % allowedDifficulties.length];
     
     let question;
     
@@ -212,7 +221,7 @@ async function generateQuestions(content, questionTypes, difficulty, numQuestion
           ],
           correctAnswer: 'Option B: Concept 2',
           explanation: 'This is the correct answer because...',
-          difficulty,
+          difficulty: questionDifficulty,
           points: 1,
           source: {
             pdfId: pdfs[Math.floor(Math.random() * pdfs.length)]._id,
@@ -228,7 +237,7 @@ async function generateQuestions(content, questionTypes, difficulty, numQuestion
           question: `Explain the concept mentioned in this context: "${sentence.substring(0, 100)}..."`,
           correctAnswer: 'A short answer explaining the concept',
           explanation: 'This concept is important because...',
-          difficulty,
+          difficulty: questionDifficulty,
           points: 2,
           source: {
             pdfId: pdfs[Math.floor(Math.random() * pdfs.length)]._id,
@@ -244,7 +253,7 @@ async function generateQuestions(content, questionTypes, difficulty, numQuestion
           question: `Discuss in detail the topic covered in this context: "${sentence.substring(0, 100)}..."`,
           correctAnswer: 'A detailed explanation covering multiple aspects',
           explanation: 'This topic is comprehensive and includes...',
-          difficulty,
+          difficulty: questionDifficulty,
           points: 5,
           source: {
             pdfId: pdfs[Math.floor(Math.random() * pdfs.length)]._id,

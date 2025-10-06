@@ -19,6 +19,8 @@ const limiter = rateLimit({
   max: 100 // limit each IP to 100 requests per windowMs
 });
 app.use(limiter);
+// Serve uploaded files statically
+app.use('/uploads', express.static('uploads'));
 
 // MongoDB connection
 mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/study-buddy', {
@@ -35,11 +37,23 @@ mongoose.connection.on('error', (err) => {
 });
 
 // Routes
-app.use('/api/auth', require('./routes/auth'));
-app.use('/api/pdfs', require('./routes/pdfs'));
-app.use('/api/chat', require('./routes/chat'));
-app.use('/api/quiz', require('./routes/quiz'));
-app.use('/api/progress', require('./routes/progress'));
+function resolveRouter(mod, name) {
+  if (typeof mod === 'function') return mod; // module.exports = router
+  if (mod && typeof mod.router === 'function') return mod.router; // { router }
+  throw new TypeError(`Invalid router export for ${name}. Expected function or { router }.`);
+}
+
+const authModule = require('./routes/auth');
+const pdfsModule = require('./routes/pdfs');
+const chatModule = require('./routes/chat');
+const quizModule = require('./routes/quiz');
+const progressModule = require('./routes/progress');
+
+app.use('/api/auth', resolveRouter(authModule, 'auth'));
+app.use('/api/pdfs', resolveRouter(pdfsModule, 'pdfs'));
+app.use('/api/chat', resolveRouter(chatModule, 'chat'));
+app.use('/api/quiz', resolveRouter(quizModule, 'quiz'));
+app.use('/api/progress', resolveRouter(progressModule, 'progress'));
 
 // Health check
 app.get('/api/health', (req, res) => {

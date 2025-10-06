@@ -13,6 +13,7 @@ const Quiz = () => {
   const [quizCompleted, setQuizCompleted] = useState(false);
   const [results, setResults] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [sourceMode, setSourceMode] = useState('all'); // 'all' | 'specific'
 
   useEffect(() => {
     fetchPDFs();
@@ -114,6 +115,28 @@ const Quiz = () => {
 
         <div className="bg-white rounded-lg shadow p-6">
           <h2 className="text-xl font-semibold text-gray-900 mb-4">Select PDFs</h2>
+
+          {/* Source selector */}
+          <div className="flex items-center space-x-3 mb-4">
+            <label className="inline-flex items-center">
+              <input
+                type="radio"
+                className="h-4 w-4 text-blue-600"
+                checked={sourceMode === 'all'}
+                onChange={() => setSourceMode('all')}
+              />
+              <span className="ml-2 text-sm text-gray-700">All uploaded PDFs</span>
+            </label>
+            <label className="inline-flex items-center">
+              <input
+                type="radio"
+                className="h-4 w-4 text-blue-600"
+                checked={sourceMode === 'specific'}
+                onChange={() => setSourceMode('specific')}
+              />
+              <span className="ml-2 text-sm text-gray-700">Specific PDFs</span>
+            </label>
+          </div>
           
           {pdfs.length === 0 ? (
             <div className="text-center py-8">
@@ -125,13 +148,14 @@ const Quiz = () => {
             </div>
           ) : (
             <>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                {pdfs.map((pdf) => (
+              {sourceMode === 'specific' && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                  {pdfs.map((pdf) => (
                   <label key={pdf.id} className="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
                     <input
                       type="checkbox"
-                      checked={selectedPDFs.includes(pdf.id)}
-                      onChange={() => handlePDFSelect(pdf.id)}
+                      checked={selectedPDFs.includes(pdf._id || pdf.id)}
+                      onChange={() => handlePDFSelect(pdf._id || pdf.id)}
                       className="mr-3 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                     />
                     <div className="flex-1">
@@ -141,13 +165,18 @@ const Quiz = () => {
                       </p>
                     </div>
                   </label>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
 
               <div className="flex justify-center">
                 <button
-                  onClick={generateQuiz}
-                  disabled={selectedPDFs.length === 0 || loading}
+                  onClick={() => {
+                    const ids = sourceMode === 'all' ? pdfs.map(p => p._id || p.id) : selectedPDFs;
+                    setSelectedPDFs(ids);
+                    generateQuiz();
+                  }}
+                  disabled={(sourceMode === 'specific' && selectedPDFs.length === 0) || loading}
                   className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
                 >
                   {loading ? (

@@ -94,15 +94,24 @@ const Dashboard = () => {
   ];
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      {/* Welcome Section */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">
-          Welcome back, {user?.profile?.name || user?.username}!
-        </h1>
-        <p className="mt-2 text-gray-600">
-          Ready to continue your learning journey?
-        </p>
+    <div className="px-4 sm:px-6 lg:px-8 py-8">
+      {/* Hero Section */}
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-8 mb-8">
+        <div className="max-w-6xl">
+          <p className="text-sm uppercase tracking-wider opacity-80 mb-2">Your AI Study Companion</p>
+          <h1 className="text-3xl md:text-4xl font-extrabold">
+            Welcome back, {user?.profile?.name || user?.username}!
+          </h1>
+          <p className="mt-3 text-blue-100 max-w-2xl">
+            Revise faster, practice smarter, and track your progress with AI-powered tools designed for students.
+          </p>
+          <div className="mt-6 flex flex-wrap gap-3">
+            <Link to="/quiz" className="bg-white text-blue-700 px-4 py-2 rounded-lg font-semibold hover:bg-blue-50 transition">Take a Quiz</Link>
+            <Link to="/pdfs" className="bg-blue-500/20 border border-white/30 px-4 py-2 rounded-lg font-semibold hover:bg-blue-500/30 transition">Upload PDFs</Link>
+          </div>
+        </div>
+        <div className="absolute -right-16 -top-16 w-64 h-64 bg-white/10 rounded-full blur-3xl" />
+        <div className="absolute -right-24 -bottom-24 w-80 h-80 bg-white/10 rounded-full blur-3xl" />
       </div>
 
       {/* Stats Overview */}
@@ -167,7 +176,7 @@ const Dashboard = () => {
                 <Link
                   key={index}
                   to={action.href}
-                  className="bg-white rounded-lg shadow p-6 hover:shadow-md transition-shadow duration-200 group"
+                  className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow duration-200 group"
                 >
                   <div className="flex items-center mb-4">
                     <div className={`p-3 rounded-lg ${action.color} transition-colors duration-200`}>
@@ -189,7 +198,7 @@ const Dashboard = () => {
         {/* Recent Activity */}
         <div className="space-y-6">
           {/* Recent PDFs */}
-          <div className="bg-white rounded-lg shadow p-6">
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-gray-900">Recent Materials</h3>
               <Link
@@ -232,7 +241,7 @@ const Dashboard = () => {
           </div>
 
           {/* Recent Chats */}
-          <div className="bg-white rounded-lg shadow p-6">
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-gray-900">Recent Chats</h3>
               <Link
@@ -278,7 +287,7 @@ const Dashboard = () => {
 
       {/* Recommendations */}
       {dashboardData?.recommendations && dashboardData.recommendations.length > 0 && (
-        <div className="mt-8 bg-white rounded-lg shadow p-6">
+        <div className="mt-8 bg-white rounded-xl shadow-sm border border-gray-100 p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Learning Recommendations</h3>
           <div className="space-y-3">
             {dashboardData.recommendations.slice(0, 3).map((rec, index) => (

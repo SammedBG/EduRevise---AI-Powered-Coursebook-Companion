@@ -35,6 +35,29 @@ const upload = multer({
   }
 });
 
+// Helper: parse PDF metadata date strings like "D:20250403140945Z"
+function parsePdfDate(input) {
+  try {
+    if (!input) return new Date();
+    if (input instanceof Date) return input;
+    let s = String(input);
+    if (s.startsWith('D:')) s = s.slice(2);
+    const year = s.slice(0, 4);
+    const month = s.slice(4, 6) || '01';
+    const day = s.slice(6, 8) || '01';
+    const hour = s.slice(8, 10) || '00';
+    const minute = s.slice(10, 12) || '00';
+    const second = s.slice(12, 14) || '00';
+    // Handle timezone offsets like +05'30' or Z; normalize to Z
+    let iso = `${year}-${month}-${day}T${hour}:${minute}:${second}Z`;
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return new Date();
+    return d;
+  } catch (e) {
+    return new Date();
+  }
+}
+
 // Upload PDF
 router.post('/upload', authenticateToken, upload.single('pdf'), async (req, res) => {
   try {
@@ -58,7 +81,7 @@ router.post('/upload', authenticateToken, upload.single('pdf'), async (req, res)
         author: pdfData.info?.Author || 'Unknown',
         subject: pdfData.info?.Subject || 'General',
         pages: pdfData.numpages,
-        createdAt: pdfData.info?.CreationDate || new Date()
+        createdAt: parsePdfDate(pdfData.info?.CreationDate)
       },
       content: {
         extractedText: pdfData.text,
@@ -71,7 +94,7 @@ router.post('/upload', authenticateToken, upload.single('pdf'), async (req, res)
     res.status(201).json({
       message: 'PDF uploaded successfully',
       pdf: {
-        id: pdf._id,
+        _id: pdf._id,
         filename: pdf.filename,
         originalName: pdf.originalName,
         size: pdf.size,

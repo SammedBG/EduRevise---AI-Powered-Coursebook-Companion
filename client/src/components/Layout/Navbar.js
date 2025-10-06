@@ -1,5 +1,5 @@
 import React from 'react';
-import { useNavigate, NavLink } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { FiLogOut, FiUser, FiBell } from 'react-icons/fi';
 import AuthContext from '../../contexts/AuthContext';
 import toast from 'react-hot-toast';
@@ -7,6 +7,7 @@ import toast from 'react-hot-toast';
 const Navbar = () => {
   const { user, logout } = React.useContext(AuthContext);
   const navigate = useNavigate();
+  const location = useLocation();
 
   const handleLogout = () => {
     logout();
@@ -15,38 +16,17 @@ const Navbar = () => {
   };
 
   return (
-    <nav className="fixed top-0 left-0 right-0 bg-white shadow-sm border-b border-gray-200 z-40">
+    <nav className="fixed top-0 left-0 right-0 bg-white/80 backdrop-blur shadow-sm border-b border-gray-200 z-40">
       <div className="px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
-          {/* Left: Brand + Tabs */}
-          <div className="flex items-center space-x-6">
+          {/* Left side */}
+          <div className="flex items-center">
             <div className="ml-0">
               <h1 className="text-xl font-bold text-gray-900">Study Buddy</h1>
             </div>
-            {/* Tabs */}
-            <div className="hidden md:flex items-center space-x-1">
-              {[
-                { name: 'Dashboard', to: '/dashboard' },
-                { name: 'Study Materials', to: '/pdfs' },
-                { name: 'Chat', to: '/chat' },
-                { name: 'Quiz', to: '/quiz' },
-                { name: 'Videos', to: '/videos' },
-                { name: 'Progress', to: '/progress' }
-              ].map((tab) => (
-                <NavLink
-                  key={tab.name}
-                  to={tab.to}
-                  className={({ isActive }) => `px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200 ${
-                    isActive ? 'bg-blue-600 text-white' : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
-                  }`}
-                >
-                  {tab.name}
-                </NavLink>
-              ))}
-            </div>
           </div>
 
-          {/* Right: User */}
+          {/* Right side */}
           <div className="flex items-center space-x-4">
             {/* Notifications */}
             <button className="p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100">
@@ -79,6 +59,31 @@ const Navbar = () => {
               </div>
             </div>
           </div>
+        </div>
+        {/* Tabs */}
+        <div className="flex items-center space-x-2 h-10">
+          {[
+            { label: 'Dashboard', href: '/dashboard' },
+            { label: 'Study Materials', href: '/pdfs' },
+            { label: 'AI Chat', href: '/chat' },
+            { label: 'Practice Quiz', href: '/quiz' },
+            { label: 'Progress', href: '/progress' }
+          ].map(tab => {
+            const isActive = location.pathname === tab.href || (tab.href === '/dashboard' && location.pathname === '/');
+            return (
+              <Link
+                key={tab.href}
+                to={tab.href}
+                className={`px-3 py-2 text-sm font-medium rounded-md transition-colors duration-200 ${
+                  isActive
+                    ? 'bg-blue-600 text-white'
+                    : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
+                }`}
+              >
+                {tab.label}
+              </Link>
+            );
+          })}
         </div>
       </div>
     </nav>

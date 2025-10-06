@@ -87,8 +87,9 @@ const PDFManager = () => {
     }
   };
 
+  const toId = (pdf) => pdf.id || pdf._id;
   const filteredPDFs = pdfs.filter(pdf =>
-    pdf.originalName.toLowerCase().includes(searchQuery.toLowerCase())
+    (pdf.originalName || '').toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   if (loading) {
@@ -143,14 +144,14 @@ const PDFManager = () => {
       {/* PDF Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredPDFs.map((pdf) => (
-          <div key={pdf.id} className="bg-white rounded-lg shadow hover:shadow-md transition-shadow duration-200">
+          <div key={toId(pdf)} className="bg-white rounded-lg shadow hover:shadow-md transition-shadow duration-200">
             <div className="p-6">
               <div className="flex items-start justify-between mb-4">
                 <div className="p-3 bg-red-100 rounded-lg">
                   <FiFileText className="h-6 w-6 text-red-600" />
                 </div>
                 <button
-                  onClick={() => handleDelete(pdf.id)}
+                  onClick={() => handleDelete(toId(pdf))}
                   className="text-gray-400 hover:text-red-500 transition-colors duration-200"
                 >
                   <FiTrash2 className="h-5 w-5" />
