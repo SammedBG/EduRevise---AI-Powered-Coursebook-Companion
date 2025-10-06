@@ -3,7 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { Toaster } from 'react-hot-toast';
 import AuthContext from './contexts/AuthContext';
 import Navbar from './components/Layout/Navbar';
-import Sidebar from './components/Layout/Sidebar';
+import Hero from './components/Layout/Hero';
 import Login from './components/Auth/Login';
 import Register from './components/Auth/Register';
 import Dashboard from './components/Dashboard/Dashboard';
@@ -79,19 +79,10 @@ function App() {
           <Toaster position="top-right" />
           
           {/* Navbar */}
-          <Navbar 
-            onMenuClick={() => setSidebarOpen(!sidebarOpen)}
-            sidebarOpen={sidebarOpen}
-          />
-
-          {/* Sidebar */}
-          <Sidebar 
-            open={sidebarOpen}
-            onClose={() => setSidebarOpen(false)}
-          />
+          <Navbar />
 
           {/* Main Content */}
-          <div className={`transition-all duration-300 ${sidebarOpen ? 'lg:ml-64' : 'ml-0'}`}>
+          <div className={`transition-all duration-300 ml-0`}>
             <main className="pt-16 min-h-screen">
               <Routes>
                 <Route path="/" element={<Dashboard />} />
@@ -102,6 +93,7 @@ function App() {
                 <Route path="/quiz" element={<Quiz />} />
                 <Route path="/quiz/:quizId" element={<Quiz />} />
                 <Route path="/progress" element={<Progress />} />
+                <Route path="/videos" element={<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">Videos coming soon</div>} />
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
             </main>
