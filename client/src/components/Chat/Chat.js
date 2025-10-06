@@ -83,7 +83,8 @@ const Chat = () => {
 
     try {
       const response = await chatAPI.sendMessage(currentChat._id, {
-        content: newMessage.trim()
+        content: newMessage.trim(),
+        pdfContext: selectedPdfId ? [selectedPdfId] : []
       });
 
       const assistantMessage = response.data.message;

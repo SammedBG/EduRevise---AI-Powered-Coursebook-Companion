@@ -156,7 +156,7 @@ router.delete('/:id', authenticateToken, async (req, res) => {
     }
 
     // Check if user owns the PDF
-    if (pdf.uploadedBy.toString() !== req.userId) {
+    if (pdf.uploadedBy.toString() !== req.userId && !pdf.isPublic) {
       return res.status(403).json({ error: 'Access denied' });
     }
 
@@ -224,7 +224,10 @@ router.post('/:id/process', authenticateToken, async (req, res) => {
     }
 
     // Simple chunking - split by paragraphs and limit chunk size
-    const text = pdf.content.extractedText;
+    const text = (pdf.content && pdf.content.extractedText) ? pdf.content.extractedText : '';
+    if (!text || text.trim().length < 50) {
+      return res.status(400).json({ error: 'This PDF has little or no extractable text. Please upload a text-based PDF (not scanned) or run OCR first.' });
+    }
     const chunks = [];
     const maxChunkSize = 1000; // characters
     const overlap = 100; // characters

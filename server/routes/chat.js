@@ -2,13 +2,30 @@ const express = require('express');
 const OpenAI = require('openai');
 const Chat = require('../models/Chat');
 const PDF = require('../models/PDF');
+const { GoogleGenerativeAI } = require('@google/generative-ai');
 const { authenticateToken } = require('./auth');
 const router = express.Router();
 
-// Initialize OpenAI (using free tier or alternative)
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY || 'your-api-key-here'
-});
+// Initialize OpenAI client (enabled only if key is provided)
+const openai = process.env.OPENAI_API_KEY ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY }) : null;
+const gemini = process.env.GEMINI_API_KEY ? new GoogleGenerativeAI(process.env.GEMINI_API_KEY) : null;
+
+// Helper function to list available Gemini models
+async function listAvailableGeminiModels(apiKey) {
+  try {
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1/models?key=${encodeURIComponent(apiKey)}`,
+      { method: 'GET' }
+    );
+    const data = await response.json();
+    return (data.models || [])
+      .filter(model => (model.supportedGenerationMethods || []).includes('generateContent'))
+      .map(model => (model.name || '').split('/').pop());
+  } catch (error) {
+    console.error('Error fetching available Gemini models:', error.message);
+    return [];
+  }
+}
 
 // Get all chats for user
 router.get('/', authenticateToken, async (req, res) => {
@@ -69,7 +86,7 @@ router.get('/:id', authenticateToken, async (req, res) => {
 // Send message
 router.post('/:id/messages', authenticateToken, async (req, res) => {
   try {
-    const { content } = req.body;
+    const { content, pdfContext: overridePdfContext } = req.body;
     
     if (!content || content.trim().length === 0) {
       return res.status(400).json({ error: 'Message content is required' });
@@ -92,8 +109,11 @@ router.post('/:id/messages', authenticateToken, async (req, res) => {
       timestamp: new Date()
     });
 
-    // Get relevant context from PDFs
-    const context = await getRelevantContext(content, chat.pdfContext);
+    // Get relevant context from PDFs (allow override from client)
+    const activePdfContext = Array.isArray(overridePdfContext) && overridePdfContext.length > 0
+      ? overridePdfContext
+      : chat.pdfContext;
+    const context = await getRelevantContext(content, activePdfContext);
     
     // Generate response using LLM
     const response = await generateResponse(content, context, chat.messages);
@@ -212,32 +232,80 @@ async function generateResponse(userMessage, context, messageHistory) {
       conversationHistory += `${msg.role}: ${msg.content}\n`;
     });
 
-    // Create prompt
-    const systemPrompt = `You are a helpful study assistant for school students. Use the provided context from PDFs to answer questions accurately. Always cite your sources by referencing the source numbers in your response.
+    // If OpenAI is configured, use it
+    if (openai) {
+      const messages = [
+        {
+          role: 'system',
+          content:
+            'You are a precise study assistant. Answer strictly from the provided context. If the answer is not present in the context, say you do not find it. Cite sources as "According to Source X:" and include a short quote.'
+        },
+        {
+          role: 'user',
+          content:
+            `Context from PDFs (with Source numbers):\n${contextString}\n\nConversation so far:\n${conversationHistory}\n\nCurrent question:\n${userMessage}\n\nInstructions:\n- Be concise and accurate.\n- Include 1-2 citations like: According to Source 2: "...".`
+        }
+      ];
 
-Context from PDFs:
-${contextString}
+      const completion = await openai.chat.completions.create({
+        model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
+        temperature: 0.2,
+        messages
+      });
 
-Conversation History:
-${conversationHistory}
+      const content = completion.choices?.[0]?.message?.content || "I'm sorry, I couldn't generate a response.";
+      return { content, citations: citations.slice(0, 3) };
+    }
 
-Instructions:
-1. Answer the user's question based on the provided context
-2. If the context doesn't contain relevant information, say so politely
-3. Always cite sources using format: "According to Source X: [quote]"
-4. Keep responses clear and educational
-5. Be encouraging and supportive`;
+    // If Gemini is configured, use it
+    if (gemini) {
+      const prompt = [
+        'You are a precise study assistant. Answer strictly from the provided context. If the answer is not present in the context, say you do not find it. Cite sources as "According to Source X:" and include a short quote.',
+        '',
+        'Context from PDFs (with Source numbers):',
+        contextString,
+        '',
+        'Conversation so far:',
+        conversationHistory,
+        '',
+        'Current question:',
+        userMessage,
+        '',
+        'Instructions:',
+        '- Be concise and accurate.',
+        '- Include 1-2 citations like: According to Source 2: "...".'
+      ].join('\n');
 
-    // For demo purposes, we'll use a simple response since we don't have actual LLM API
-    // In production, you would call the actual LLM API here
+      // Dynamically fetch available models
+      const candidates = await listAvailableGeminiModels(process.env.GEMINI_API_KEY);
+      if (candidates.length === 0) {
+        console.warn('No Gemini models available for generateContent');
+        throw new Error('No valid Gemini models found');
+      }
+
+      let lastErr;
+      for (const modelName of candidates) {
+        try {
+          const model = gemini.getGenerativeModel({ model: modelName });
+          const result = await model.generateContent(prompt);
+          const content = result.response?.text();
+          if (content) return { content, citations: citations.slice(0, 3) };
+        } catch (e) {
+          lastErr = e;
+          console.warn(`Gemini model ${modelName} failed:`, e.message);
+          continue;
+        }
+      }
+      console.error('All Gemini models failed:', lastErr?.message || lastErr);
+      throw new Error('Failed to generate response with Gemini');
+    }
+
+    // Fallback to mock if no LLM is configured
+    console.error('No LLM configured: Missing both OpenAI and Gemini API keys');
     const response = await generateMockResponse(userMessage, contextString);
-
-    return {
-      content: response,
-      citations: citations.slice(0, 3) // Limit to top 3 citations
-    };
+    return { content: response, citations: citations.slice(0, 3) };
   } catch (error) {
-    console.error('Error generating response:', error);
+    console.error('Error generating response:', error.message);
     return {
       content: "I'm sorry, I'm having trouble processing your request right now. Please try again later.",
       citations: []
@@ -247,7 +315,6 @@ Instructions:
 
 // Mock response generator for demo purposes
 async function generateMockResponse(userMessage, context) {
-  // This is a simple mock - in production, replace with actual LLM API call
   const responses = [
     `Based on the content you've uploaded, I can help you understand the concepts. ${userMessage.includes('what') ? 'Let me explain what I found in your study materials.' : 'Here\'s what I can tell you about this topic.'}`,
     `According to your study materials, ${userMessage.toLowerCase().includes('physics') ? 'this physics concept involves fundamental principles that are important to understand.' : 'this topic covers several key areas that you should focus on.'}`,
