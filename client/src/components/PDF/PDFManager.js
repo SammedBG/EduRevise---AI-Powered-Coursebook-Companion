@@ -87,6 +87,16 @@ const PDFManager = () => {
     }
   };
 
+  const handleProcess = async (pdfId) => {
+    try {
+      await pdfAPI.process(pdfId);
+      toast.success('PDF processed successfully');
+      fetchPDFs();
+    } catch (error) {
+      toast.error(error.response?.data?.error || 'Failed to process PDF');
+    }
+  };
+
   const toId = (pdf) => pdf.id || pdf._id;
   const filteredPDFs = pdfs.filter(pdf =>
     (pdf.originalName || '').toLowerCase().includes(searchQuery.toLowerCase())
@@ -173,8 +183,16 @@ const PDFManager = () => {
                 <button className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded text-sm font-medium transition-colors duration-200">
                   View
                 </button>
-                <button className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-2 rounded text-sm font-medium transition-colors duration-200">
-                  Process
+                <button
+                  onClick={() => handleProcess(toId(pdf))}
+                  disabled={pdf.content?.processed}
+                  className={`flex-1 px-3 py-2 rounded text-sm font-medium transition-colors duration-200 ${
+                    pdf.content?.processed
+                      ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                      : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                  }`}
+                >
+                  {pdf.content?.processed ? 'Processed' : 'Process'}
                 </button>
               </div>
             </div>
