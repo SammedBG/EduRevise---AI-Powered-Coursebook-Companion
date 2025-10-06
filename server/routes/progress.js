@@ -2,7 +2,7 @@ const express = require('express');
 const Progress = require('../models/Progress');
 const Quiz = require('../models/Quiz');
 const PDF = require('../models/PDF');
-const { authenticateToken } = require('./auth');
+const { authenticateToken } = require('../middleware/auth');
 const router = express.Router();
 
 // Get user's progress dashboard

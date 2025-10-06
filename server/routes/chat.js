@@ -2,7 +2,7 @@ const express = require('express');
 const OpenAI = require('openai');
 const Chat = require('../models/Chat');
 const PDF = require('../models/PDF');
-const { authenticateToken } = require('./auth');
+const { authenticateToken } = require('../middleware/auth');
 const router = express.Router();
 
 // Initialize OpenAI (using free tier or alternative)

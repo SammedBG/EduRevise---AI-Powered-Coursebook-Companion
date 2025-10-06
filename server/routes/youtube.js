@@ -1,7 +1,7 @@
 const express = require('express');
 const { google } = require('googleapis');
 const PDF = require('../models/PDF');
-const { authenticateToken } = require('./auth');
+const { authenticateToken } = require('../middleware/auth');
 const router = express.Router();
 
 // Initialize YouTube Data API
