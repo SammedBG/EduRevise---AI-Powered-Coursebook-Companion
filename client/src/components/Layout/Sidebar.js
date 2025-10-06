@@ -7,7 +7,8 @@ import {
   FiHelpCircle, 
   FiTrendingUp,
   FiX,
-  FiBookOpen
+  FiBookOpen,
+  FiYoutube
 } from 'react-icons/fi';
 
 const Sidebar = ({ open, onClose }) => {
@@ -18,6 +19,7 @@ const Sidebar = ({ open, onClose }) => {
     { name: 'Study Materials', href: '/pdfs', icon: FiFileText },
     { name: 'AI Chat', href: '/chat', icon: FiMessageSquare },
     { name: 'Practice Quiz', href: '/quiz', icon: FiHelpCircle },
+    { name: 'Video Learning', href: '/videos', icon: FiYoutube },
     { name: 'Progress', href: '/progress', icon: FiTrendingUp },
   ];
 

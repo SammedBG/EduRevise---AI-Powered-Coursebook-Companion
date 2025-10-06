@@ -40,6 +40,7 @@ app.use('/api/pdfs', require('./routes/pdfs'));
 app.use('/api/chat', require('./routes/chat'));
 app.use('/api/quiz', require('./routes/quiz'));
 app.use('/api/progress', require('./routes/progress'));
+app.use('/api/youtube', require('./routes/youtube'));
 
 // Health check
 app.get('/api/health', (req, res) => {

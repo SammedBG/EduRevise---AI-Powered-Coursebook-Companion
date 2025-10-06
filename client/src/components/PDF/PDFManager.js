@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { FiUpload, FiFileText, FiTrash2, FiSearch, FiPlus, FiDownload } from 'react-icons/fi';
 import { pdfAPI } from '../../services/api';
+import YouTubeRecommendations from '../YouTube/YouTubeRecommendations';
 import toast from 'react-hot-toast';
 
 const PDFManager = () => {
@@ -180,6 +181,16 @@ const PDFManager = () => {
           </div>
         ))}
       </div>
+
+      {/* YouTube Recommendations */}
+      {filteredPDFs.length > 0 && (
+        <div className="mt-8">
+          <YouTubeRecommendations 
+            pdfIds={filteredPDFs.slice(0, 3).map(pdf => pdf.id)} 
+            maxResults={4}
+          />
+        </div>
+      )}
 
       {/* Empty State */}
       {filteredPDFs.length === 0 && (

@@ -11,6 +11,7 @@ import PDFManager from './components/PDF/PDFManager';
 import Chat from './components/Chat/Chat';
 import Quiz from './components/Quiz/Quiz';
 import Progress from './components/Progress/Progress';
+import YouTubePage from './components/YouTube/YouTubePage';
 import { authAPI } from './services/api';
 
 function App() {
@@ -102,6 +103,7 @@ function App() {
                 <Route path="/quiz" element={<Quiz />} />
                 <Route path="/quiz/:quizId" element={<Quiz />} />
                 <Route path="/progress" element={<Progress />} />
+                <Route path="/videos" element={<YouTubePage />} />
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
             </main>
