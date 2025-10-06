@@ -42,7 +42,7 @@ const Register = ({ onLogin }) => {
     try {
       const { confirmPassword, ...userData } = formData;
       const response = await authAPI.register(userData);
-      onLogin(response.data.user, response.data.token);
+      await onLogin(response.data.user);
       toast.success('Account created successfully!');
     } catch (error) {
       toast.error(error.response?.data?.error || 'Registration failed');

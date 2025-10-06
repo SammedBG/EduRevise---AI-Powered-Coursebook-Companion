@@ -31,7 +31,8 @@ A comprehensive web application that helps school students revise from their cou
 ### Backend
 - **Node.js** with Express.js
 - **MongoDB** with Mongoose ODM
-- **JWT** for authentication
+- **Secure JWT Authentication** with HTTP-only cookies
+- **CSRF Protection** for enhanced security
 - **Multer** for file uploads
 - **PDF-Parse** for PDF text extraction
 - **OpenAI API** integration (configurable)
@@ -77,8 +78,10 @@ nano server/.env
 ```env
 PORT=5000
 MONGODB_URI=mongodb://localhost:27017/study-buddy
+JWT_SECRET=your_super_secret_jwt_key_minimum_32_characters_long
+REFRESH_SECRET=your_super_secret_refresh_key_minimum_32_characters_long
 OPENAI_API_KEY=your_openai_api_key_here
-JWT_SECRET=your_jwt_secret_here
+YOUTUBE_API_KEY=your_youtube_api_key_here
 NODE_ENV=development
 ```
 
