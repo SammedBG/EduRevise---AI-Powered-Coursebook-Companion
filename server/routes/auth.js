@@ -81,9 +81,16 @@ router.post('/register', async (req, res) => {
       { expiresIn: '7d' }
     );
 
+    // Set secure HttpOnly cookie
+    res.cookie('token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+    });
+
     res.status(201).json({
       message: 'User created successfully',
-      token,
       user: user.toJSON()
     });
   } catch (error) {
@@ -160,13 +167,20 @@ router.post('/login', async (req, res) => {
       { expiresIn: '7d' }
     );
 
+    // Set secure HttpOnly cookie
+    res.cookie('token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+    });
+
     // Update last active
     user.lastActive = new Date();
     await user.save();
 
     res.json({
       message: 'Login successful',
-      token,
       user: user.toJSON()
     });
   } catch (error) {
@@ -305,19 +319,40 @@ router.put('/profile', authenticateToken, async (req, res) => {
   }
 });
 
+// Logout route
+router.post('/logout', authenticateToken, (req, res) => {
+  try {
+    // Clear the HttpOnly cookie
+    res.clearCookie('token', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict'
+    });
+
+    res.json({
+      message: 'Logout successful'
+    });
+  } catch (error) {
+    console.error('Logout error:', error);
+    res.status(500).json({ 
+      error: 'Internal server error during logout',
+      code: 'INTERNAL_ERROR'
+    });
+  }
+});
+
 // Middleware to authenticate JWT token
 function authenticateToken(req, res, next) {
   try {
-    const authHeader = req.headers['authorization'];
+    // Try cookie first (secure), then header (fallback)
+    let token = req.cookies.token;
     
-    if (!authHeader) {
-      return res.status(401).json({ 
-        error: 'Authorization header is required',
-        code: 'MISSING_AUTH_HEADER'
-      });
+    if (!token) {
+      const authHeader = req.headers['authorization'];
+      if (authHeader) {
+        token = authHeader.split(' ')[1];
+      }
     }
-
-    const token = authHeader.split(' ')[1];
     
     if (!token) {
       return res.status(401).json({ 

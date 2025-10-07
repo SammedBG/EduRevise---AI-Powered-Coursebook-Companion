@@ -12,17 +12,13 @@ const Register = () => {
     email: '',
     password: '',
     confirmPassword: '',
-    grade: '',
-    subjects: []
+    name: '',
+    grade: ''
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const subjects = [
-    'Mathematics', 'Physics', 'Chemistry', 'Biology', 'English',
-    'History', 'Geography', 'Computer Science', 'Economics', 'Other'
-  ];
 
   const grades = [
     'Grade 9', 'Grade 10', 'Grade 11', 'Grade 12', 'College', 'Graduate'
@@ -36,14 +32,6 @@ const Register = () => {
     });
   };
 
-  const handleSubjectChange = (subject) => {
-    setFormData({
-      ...formData,
-      subjects: formData.subjects.includes(subject)
-        ? formData.subjects.filter(s => s !== subject)
-        : [...formData.subjects, subject]
-    });
-  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -56,11 +44,20 @@ const Register = () => {
     setLoading(true);
 
     try {
-      await register(formData);
+      // Send only the required fields to the backend
+      const registrationData = {
+        username: formData.username,
+        email: formData.email,
+        password: formData.password,
+        name: formData.name,
+        grade: formData.grade
+      };
+      
+      await register(registrationData);
       toast.success('Account created successfully!');
       navigate('/dashboard');
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Registration failed');
+      toast.error(error.response?.data?.error || error.response?.data?.message || 'Registration failed');
     } finally {
       setLoading(false);
     }
@@ -193,6 +190,28 @@ const Register = () => {
               </div>
 
               <div>
+                <label htmlFor="name" className="block text-sm font-semibold text-gray-700 mb-2">
+                  Full Name
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <FiUser className="h-5 w-5 text-gray-400" />
+                  </div>
+                  <input
+                    id="name"
+                    name="name"
+                    type="text"
+                    autoComplete="name"
+                    required
+                    value={formData.name || ''}
+                    onChange={handleChange}
+                    className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200"
+                    placeholder="Enter your full name"
+                  />
+                </div>
+              </div>
+
+              <div>
                 <label htmlFor="grade" className="block text-sm font-semibold text-gray-700 mb-2">
                   Grade Level
                 </label>
@@ -208,25 +227,6 @@ const Register = () => {
                     <option key={grade} value={grade}>{grade}</option>
                   ))}
                 </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Subjects of Interest
-                </label>
-                <div className="grid grid-cols-2 gap-2">
-                  {subjects.map(subject => (
-                    <label key={subject} className="flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-50 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={formData.subjects.includes(subject)}
-                        onChange={() => handleSubjectChange(subject)}
-                        className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
-                      />
-                      <span className="text-sm text-gray-700">{subject}</span>
-                    </label>
-                  ))}
-                </div>
               </div>
 
               <div>

@@ -21,14 +21,19 @@ export const AuthProvider = ({ children }) => {
 
   const checkAuthStatus = async () => {
     try {
-      const token = localStorage.getItem('token');
-      if (token) {
-        const response = await authAPI.getProfile();
-        setUser(response.data.user);
-      }
+      // Add small delay to prevent rapid-fire requests
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      // Cookies are automatically sent with requests
+      const response = await authAPI.getProfile();
+      setUser(response.data.user);
     } catch (error) {
-      console.error('Auth check failed:', error);
-      localStorage.removeItem('token');
+      // Only log non-401 errors (401 is expected when not logged in)
+      if (error.response?.status !== 401) {
+        console.error('Auth check failed:', error);
+      }
+      // Don't redirect here - let the component handle the redirect
+      setUser(null);
     } finally {
       setLoading(false);
     }
@@ -37,7 +42,7 @@ export const AuthProvider = ({ children }) => {
   const login = async (credentials) => {
     try {
       const response = await authAPI.login(credentials);
-      localStorage.setItem('token', response.data.token);
+      // Token is now stored in HttpOnly cookie automatically
       setUser(response.data.user);
       return response.data;
     } catch (error) {
@@ -48,7 +53,7 @@ export const AuthProvider = ({ children }) => {
   const register = async (userData) => {
     try {
       const response = await authAPI.register(userData);
-      localStorage.setItem('token', response.data.token);
+      // Token is now stored in HttpOnly cookie automatically
       setUser(response.data.user);
       return response.data;
     } catch (error) {
@@ -56,9 +61,15 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const logout = () => {
-    localStorage.removeItem('token');
-    setUser(null);
+  const logout = async () => {
+    try {
+      // Call logout endpoint to clear HttpOnly cookie
+      await authAPI.logout();
+    } catch (error) {
+      console.error('Logout error:', error);
+    } finally {
+      setUser(null);
+    }
   };
 
   const value = {

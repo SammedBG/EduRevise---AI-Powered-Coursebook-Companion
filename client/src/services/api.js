@@ -8,15 +8,13 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  withCredentials: true, // Allow cookies to be sent
 });
 
-// Request interceptor to add auth token
+// Request interceptor - cookies are automatically sent with withCredentials: true
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
+    // No need to manually add tokens - HttpOnly cookies are sent automatically
     return config;
   },
   (error) => {
@@ -29,8 +27,11 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      localStorage.removeItem('token');
-      window.location.href = '/login';
+      // Only redirect to login if not already on login/register page
+      const currentPath = window.location.pathname;
+      if (!currentPath.includes('/login') && !currentPath.includes('/register')) {
+        window.location.href = '/login';
+      }
     }
     return Promise.reject(error);
   }
@@ -42,6 +43,7 @@ export const authAPI = {
   register: (userData) => api.post('/auth/register', userData),
   getProfile: () => api.get('/auth/profile'),
   updateProfile: (data) => api.put('/auth/profile', data),
+  logout: () => api.post('/auth/logout'),
 };
 
 // PDF API

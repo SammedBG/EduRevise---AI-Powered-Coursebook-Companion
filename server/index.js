@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
+const cookieParser = require('cookie-parser');
 require('dotenv').config();
 
 const app = express();
@@ -11,16 +12,38 @@ const app = express();
 // Behind proxies (Railway/Render/Heroku), enable correct client IP detection
 app.set('trust proxy', 1);
 app.use(helmet());
-app.use(cors());
+app.use(cookieParser());
+app.use(cors({
+  origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
+  credentials: true // Allow cookies to be sent
+}));
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
-// Rate limiting
+// Rate limiting - More lenient for development
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100 // limit each IP to 100 requests per windowMs
+  max: process.env.NODE_ENV === 'production' ? 100 : 1000, // 1000 requests in dev, 100 in production
+  message: {
+    error: 'Too many requests, please try again later',
+    code: 'RATE_LIMIT_EXCEEDED'
+  }
 });
 app.use(limiter);
+
+// Development route to reset rate limit (only in development)
+if (process.env.NODE_ENV !== 'production') {
+  app.post('/api/reset-rate-limit', (req, res) => {
+    // This doesn't actually reset the rate limit, but provides info
+    res.json({
+      message: 'Rate limit reset info',
+      note: 'Rate limit will reset automatically after 15 minutes',
+      currentLimit: 1000,
+      windowMs: '15 minutes'
+    });
+  });
+}
+
 // Serve uploaded files statically
 app.use('/uploads', express.static('uploads'));
 
