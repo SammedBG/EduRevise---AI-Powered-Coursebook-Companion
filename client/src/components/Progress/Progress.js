@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FiTrendingUp, FiTarget, FiClock, FiBookOpen, FiAward, FiBarChart3 } from 'react-icons/fi';
+import { FiTrendingUp, FiTarget, FiClock, FiBookOpen, FiAward, FiBarChart } from 'react-icons/fi';
 import { progressAPI } from '../../services/api';
 import toast from 'react-hot-toast';
 
@@ -61,7 +61,7 @@ const Progress = () => {
       <div className="mb-8">
         <div className="flex items-center space-x-4 mb-4">
           <div className="w-16 h-16 bg-gradient-to-br from-purple-600 to-indigo-600 rounded-2xl flex items-center justify-center">
-            <FiBarChart3 className="h-8 w-8 text-white" />
+            <FiBarChart className="h-8 w-8 text-white" />
           </div>
           <div>
             <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent">Your Progress</h1>

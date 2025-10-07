@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
-import { FiLogOut, FiUser, FiBell, FiBookOpen, FiMessageSquare, FiBarChart3, FiHome, FiHelpCircle } from 'react-icons/fi';
+import { FiLogOut, FiUser, FiBell, FiBookOpen, FiMessageSquare, FiBarChart, FiHome, FiHelpCircle } from 'react-icons/fi';
 import AuthContext from '../../contexts/AuthContext';
 import toast from 'react-hot-toast';
 
@@ -20,7 +20,7 @@ const Navbar = () => {
     { label: 'Study Materials', href: '/pdfs', icon: FiBookOpen },
     { label: 'AI Chat', href: '/chat', icon: FiMessageSquare },
     { label: 'Practice Quiz', href: '/quiz', icon: FiHelpCircle },
-    { label: 'Progress', href: '/progress', icon: FiBarChart3 },
+    { label: 'Progress', href: '/progress', icon: FiBarChart },
   ];
 
   return (

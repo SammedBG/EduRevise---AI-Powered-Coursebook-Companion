@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { FiFileText, FiTrash2, FiSearch, FiPlus, FiEye, FiX, FiBookOpen, FiUpload, FiRefreshCw } from 'react-icons/fi';
+import { FiFileText, FiTrash2, FiSearch, FiEye, FiX, FiBookOpen, FiUpload } from 'react-icons/fi';
 import { pdfAPI } from '../../services/api';
-import PDFViewer from './PDFViewer';
+// import PDFViewer from './PDFViewer';
 import toast from 'react-hot-toast';
 
 const PDFManager = () => {
@@ -317,12 +317,126 @@ const PDFManager = () => {
             
             {/* PDF Viewer */}
             <div className="flex-1 overflow-hidden bg-gray-100 rounded-lg">
-              <iframe
-                src={`${process.env.REACT_APP_API_URL?.replace('/api', '') || 'http://localhost:5000'}/uploads/pdfs/${selectedPdf.filename}#toolbar=1&navpanes=1&scrollbar=1`}
-                className="w-full h-full rounded-lg"
-                title={selectedPdf.originalName}
-                style={{ minHeight: '600px' }}
-              />
+              {(() => {
+                const apiBase = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+                const serverOrigin = apiBase.replace(/\/?api\/?$/, '');
+                const pdfUrl = `${serverOrigin}/uploads/pdfs/${selectedPdf.filename}`;
+                
+                return (
+                  <div className="w-full h-full flex flex-col">
+                    {/* PDF Viewer Options */}
+                    <div className="p-3 bg-white border-b flex items-center justify-between">
+                      <div className="flex items-center space-x-4">
+                        <span className="text-sm text-gray-600">
+                          <strong>File:</strong> {selectedPdf.originalName}
+                        </span>
+                        <span className="text-xs text-gray-500">
+                          Size: {Math.round(selectedPdf.size / 1024)} KB
+                        </span>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <a 
+                          href={pdfUrl} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="px-3 py-1 bg-purple-600 text-white text-xs rounded-lg hover:bg-purple-700 transition-colors duration-200"
+                        >
+                          Open in New Tab
+                        </a>
+                        <button
+                          onClick={() => {
+                            const link = document.createElement('a');
+                            link.href = pdfUrl;
+                            link.download = selectedPdf.originalName;
+                            link.click();
+                          }}
+                          className="px-3 py-1 bg-gray-600 text-white text-xs rounded-lg hover:bg-gray-700 transition-colors duration-200"
+                        >
+                          Download
+                        </button>
+                      </div>
+                    </div>
+                    
+                    {/* PDF Viewer Container */}
+                    <div className="flex-1 relative">
+                      {/* Browser PDF Viewer */}
+                      <iframe
+                        src={`${pdfUrl}#toolbar=1&navpanes=1&scrollbar=1&view=FitH`}
+                        className="absolute inset-0 w-full h-full"
+                        title={`PDF Viewer - ${selectedPdf.originalName}`}
+                        style={{ 
+                          minHeight: '600px',
+                          border: 'none'
+                        }}
+                        onLoad={() => {
+                          console.log('PDF iframe loaded successfully');
+                        }}
+                        onError={(e) => {
+                          console.error('PDF iframe error:', e);
+                        }}
+                      />
+                      
+                      {/* Alternative PDF Viewer using object tag */}
+                      <object
+                        data={pdfUrl}
+                        type="application/pdf"
+                        className="absolute inset-0 w-full h-full hidden"
+                        style={{ minHeight: '600px' }}
+                        onLoad={() => console.log('PDF object loaded successfully')}
+                        onError={(e) => console.error('PDF object error:', e)}
+                      >
+                        {/* Fallback content */}
+                        <div className="absolute inset-0 flex items-center justify-center bg-gray-50">
+                          <div className="text-center p-8">
+                            <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                              <FiFileText className="h-8 w-8 text-red-600" />
+                            </div>
+                            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                              PDF Preview Not Available
+                            </h3>
+                            <p className="text-gray-600 mb-4">
+                              Your browser doesn't support PDF preview. Please use the buttons above to view or download the PDF.
+                            </p>
+                            <div className="flex items-center justify-center space-x-3">
+                              <a 
+                                href={pdfUrl} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors duration-200"
+                              >
+                                Open in New Tab
+                              </a>
+                              <button
+                                onClick={() => {
+                                  const link = document.createElement('a');
+                                  link.href = pdfUrl;
+                                  link.download = selectedPdf.originalName;
+                                  link.click();
+                                }}
+                                className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors duration-200"
+                              >
+                                Download PDF
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </object>
+                    </div>
+                    
+                    {/* PDF Info Footer */}
+                    <div className="p-3 bg-gray-50 border-t text-xs text-gray-600">
+                      <div className="flex items-center justify-between">
+                        <span>
+                          <strong>Uploaded:</strong> {new Date(selectedPdf.uploadDate).toLocaleDateString()}
+                        </span>
+                        <span>
+                          <strong>Status:</strong> {selectedPdf.content?.processed ? 'Processed' : 'Processing'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
           </div>
         </div>

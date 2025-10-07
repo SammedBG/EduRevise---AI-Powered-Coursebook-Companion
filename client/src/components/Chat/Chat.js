@@ -182,9 +182,9 @@ const Chat = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-purple-50/30 pt-28 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <div className="w-16 h-16 border-4 border-purple-200 border-t-purple-600 rounded-full animate-spin mx-auto mb-4"></div>
           <p className="text-gray-600 font-medium">Loading your chat experience...</p>
         </div>
       </div>
@@ -192,7 +192,7 @@ const Chat = () => {
   }
 
   return (
-    <div className="h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-purple-50/30 pt-28 flex">
       {/* Mobile Menu Overlay */}
       {showMobileMenu && (
         <div className="fixed inset-0 z-40 lg:hidden">
@@ -357,7 +357,7 @@ const Chat = () => {
       </div>
 
       {/* Main Chat Area */}
-      <div className="flex-1 flex flex-col bg-white shadow-lg">
+      <div className="flex-1 flex flex-col bg-white shadow-lg min-h-0">
         {/* Mobile Header */}
         <div className="lg:hidden p-4 border-b border-gray-200 bg-white flex items-center justify-between">
           <button
@@ -375,11 +375,11 @@ const Chat = () => {
         {currentChat ? (
           <>
             {/* Enhanced Chat Header */}
-            <div className="p-4 border-b border-gray-200 bg-gradient-to-r from-white to-gray-50">
+            <div className="p-4 border-b border-gray-200 bg-gradient-to-r from-white to-purple-50/30">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
-                  <div className="bg-blue-100 rounded-full p-2">
-                    <FiMessageSquare className="h-5 w-5 text-blue-600" />
+                  <div className="bg-purple-100 rounded-full p-2">
+                    <FiMessageSquare className="h-5 w-5 text-purple-600" />
                   </div>
                   <div>
                     <h3 className="text-lg font-semibold text-gray-900">
@@ -393,7 +393,7 @@ const Chat = () => {
                 
                 <div className="flex items-center space-x-2">
                   <select
-                    className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                    className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200"
                     value={selectedPdfId || ''}
                     onChange={(e) => setSelectedPdfId(e.target.value || null)}
                   >
@@ -408,7 +408,7 @@ const Chat = () => {
                     onClick={() => setShowViewer(!showViewer)}
                     className={`flex items-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
                       showViewer 
-                        ? 'bg-blue-100 text-blue-700 hover:bg-blue-200' 
+                        ? 'bg-purple-100 text-purple-700 hover:bg-purple-200' 
                         : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                     }`}
                   >
@@ -619,7 +619,7 @@ const Chat = () => {
               </p>
               <button
                 onClick={createNewChat}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-all duration-200 shadow-sm hover:shadow-md"
+                className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-200 shadow-lg hover:shadow-xl"
               >
                 Start New Chat
               </button>

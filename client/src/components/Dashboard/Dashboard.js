@@ -9,9 +9,7 @@ import {
   FiClock,
   FiTarget,
   FiHome,
-  FiUsers,
   FiAward,
-  FiBarChart3,
   FiChevronRight,
   FiStar
 } from 'react-icons/fi';
