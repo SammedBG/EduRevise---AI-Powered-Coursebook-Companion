@@ -371,9 +371,9 @@ router.post('/:id/process', authenticateToken, async (req, res) => {
 // Helper function to generate embeddings for text
 async function generateEmbedding(text) {
   try {
-    // Try GROQ API first (faster and more reliable)
-    if (process.env.GROQ_API_KEY) {
-      return await generateEmbeddingWithGROQ(text);
+    // Try Gemini API first (FREE embeddings)
+    if (process.env.GEMINI_API_KEY) {
+      return await generateEmbeddingWithGemini(text);
     }
     
     // Try OpenAI API
@@ -390,28 +390,23 @@ async function generateEmbedding(text) {
   }
 }
 
-// Generate embedding using GROQ API
-async function generateEmbeddingWithGROQ(text) {
+// Generate embedding using Gemini API (FREE)
+async function generateEmbeddingWithGemini(text) {
   try {
-    const response = await axios.post('https://api.groq.com/openai/v1/embeddings', {
-      model: 'text-embedding-3-small',
-      input: text,
-      encoding_format: 'float'
-    }, {
-      headers: {
-        'Authorization': `Bearer ${process.env.GROQ_API_KEY}`,
-        'Content-Type': 'application/json'
-      },
-      timeout: 10000
-    });
-
-    if (response.data && response.data.data && response.data.data[0]) {
-      return response.data.data[0].embedding;
+    const { GoogleGenerativeAI } = require('@google/generative-ai');
+    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+    const model = genAI.getGenerativeModel({ model: 'text-embedding-004' });
+    
+    const result = await model.embedContent(text);
+    const embedding = result.embedding.values;
+    
+    if (embedding && embedding.length > 0) {
+      return embedding;
     } else {
-      throw new Error('Invalid embedding response from GROQ');
+      throw new Error('Invalid embedding response from Gemini');
     }
   } catch (error) {
-    console.error('GROQ embedding generation failed:', error.response?.data || error.message);
+    console.error('Gemini embedding generation failed:', error.message);
     throw error;
   }
 }

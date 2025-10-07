@@ -87,7 +87,7 @@ router.get('/:id', authenticateToken, async (req, res) => {
 // Send message
 router.post('/:id/messages', authenticateToken, async (req, res) => {
   try {
-    const { content } = req.body;
+    const { content, pdfContext } = req.body;
     
     if (!content || content.trim().length === 0) {
       return res.status(400).json({ error: 'Message content is required' });
@@ -110,8 +110,10 @@ router.post('/:id/messages', authenticateToken, async (req, res) => {
       timestamp: new Date()
     });
 
-    // Get relevant context from PDFs
-    const context = await getRelevantContext(content, chat.pdfContext);
+    // Get relevant context from PDFs (use pdfContext from request, fallback to chat.pdfContext)
+    const selectedPdfs = pdfContext && pdfContext.length > 0 ? pdfContext : chat.pdfContext;
+    console.log('Getting context for PDFs:', selectedPdfs);
+    const context = await getRelevantContext(content, selectedPdfs);
     
     // Generate response using LLM
     const response = await generateResponse(content, context, chat.messages);
@@ -165,22 +167,18 @@ router.delete('/:id', authenticateToken, async (req, res) => {
 // Helper function to generate query embedding
 async function generateQueryEmbedding(query) {
   try {
-    // Try GROQ API first
-    if (process.env.GROQ_API_KEY) {
-      const response = await axios.post('https://api.groq.com/openai/v1/embeddings', {
-        model: 'text-embedding-3-small',
-        input: query,
-        encoding_format: 'float'
-      }, {
-        headers: {
-          'Authorization': `Bearer ${process.env.GROQ_API_KEY}`,
-          'Content-Type': 'application/json'
-        },
-        timeout: 10000
-      });
-
-      if (response.data && response.data.data && response.data.data[0]) {
-        return response.data.data[0].embedding;
+    // Try Gemini API first (FREE embeddings)
+    if (process.env.GEMINI_API_KEY) {
+      const { GoogleGenerativeAI } = require('@google/generative-ai');
+      const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+      const model = genAI.getGenerativeModel({ model: 'text-embedding-004' });
+      
+      const result = await model.embedContent(query);
+      const embedding = result.embedding.values;
+      
+      if (embedding && embedding.length > 0) {
+        console.log('Query embedding generated: Yes (Gemini)');
+        return embedding;
       }
     }
     
@@ -199,10 +197,12 @@ async function generateQueryEmbedding(query) {
       });
 
       if (response.data && response.data.data && response.data.data[0]) {
+        console.log('Query embedding generated: Yes (OpenAI)');
         return response.data.data[0].embedding;
       }
     }
     
+    console.warn('No embedding API configured - using keyword search only');
     return null;
   } catch (error) {
     console.error('Query embedding generation failed:', error);

@@ -10,7 +10,7 @@ import PDFManager from './components/PDF/PDFManager';
 import Chat from './components/Chat/Chat';
 import Quiz from './components/Quiz/Quiz';
 import Progress from './components/Progress/Progress';
-import TestPage from './components/Test/TestPage';
+
 
 function AppContent() {
   const { user, loading } = useAuth();
@@ -48,7 +48,6 @@ function AppContent() {
               <Route path="/quiz" element={<Quiz />} />
               <Route path="/quiz/:quizId" element={<Quiz />} />
               <Route path="/progress" element={<Progress />} />
-              <Route path="/test" element={<TestPage />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </main>
