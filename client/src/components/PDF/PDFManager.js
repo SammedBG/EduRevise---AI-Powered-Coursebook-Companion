@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { FiFileText, FiTrash2, FiSearch, FiEye, FiX, FiBookOpen, FiUpload } from 'react-icons/fi';
+import { FiFileText, FiTrash2, FiSearch, FiEye, FiX, FiBookOpen, FiUpload, FiPlay } from 'react-icons/fi';
 import { pdfAPI } from '../../services/api';
+import YouTubeRecommendations from '../YouTube/YouTubeRecommendations';
 // import PDFViewer from './PDFViewer';
 import toast from 'react-hot-toast';
 
@@ -13,6 +14,8 @@ const PDFManager = () => {
   const [selectedFile, setSelectedFile] = useState(null);
   const [showViewer, setShowViewer] = useState(false);
   const [selectedPdf, setSelectedPdf] = useState(null);
+  const [showYouTubeModal, setShowYouTubeModal] = useState(false);
+  const [selectedPdfForYouTube, setSelectedPdfForYouTube] = useState(null);
 
   useEffect(() => {
     fetchPDFs();
@@ -110,6 +113,16 @@ const PDFManager = () => {
     setSelectedPdf(null);
   };
 
+  const handleYouTubeRecommendations = (pdf) => {
+    setSelectedPdfForYouTube(pdf);
+    setShowYouTubeModal(true);
+  };
+
+  const closeYouTubeModal = () => {
+    setShowYouTubeModal(false);
+    setSelectedPdfForYouTube(null);
+  };
+
   const toId = (pdf) => pdf.id || pdf._id;
   const filteredPDFs = pdfs.filter(pdf =>
     (pdf.originalName || '').toLowerCase().includes(searchQuery.toLowerCase())
@@ -199,10 +212,10 @@ const PDFManager = () => {
                 </div>
               </div>
 
-              <div className="flex space-x-2">
+              <div className="grid grid-cols-2 gap-2">
                 <button 
                   onClick={() => handleViewPDF(pdf)}
-                  className="flex-1 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 flex items-center justify-center space-x-1 shadow-md hover:shadow-lg"
+                  className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 flex items-center justify-center space-x-1 shadow-md hover:shadow-lg"
                 >
                   <FiEye className="h-4 w-4" />
                   <span>View</span>
@@ -210,13 +223,20 @@ const PDFManager = () => {
                 <button
                   onClick={() => handleProcess(toId(pdf))}
                   disabled={pdf.content?.processed}
-                  className={`flex-1 px-3 py-2 rounded text-sm font-medium transition-colors duration-200 ${
+                  className={`px-3 py-2 rounded text-sm font-medium transition-colors duration-200 ${
                     pdf.content?.processed
                       ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
                       : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
                   }`}
                 >
                   {pdf.content?.processed ? 'Processed' : 'Process'}
+                </button>
+                <button
+                  onClick={() => handleYouTubeRecommendations(pdf)}
+                  className="col-span-2 bg-gradient-to-r from-red-600 to-pink-600 hover:from-red-700 hover:to-pink-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 flex items-center justify-center space-x-1 shadow-md hover:shadow-lg mt-1"
+                >
+                  <FiPlay className="h-4 w-4" />
+                  <span>Educational Videos</span>
                 </button>
               </div>
             </div>
@@ -437,6 +457,32 @@ const PDFManager = () => {
                   </div>
                 );
               })()}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* YouTube Recommendations Modal */}
+      {showYouTubeModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-hidden">
+            <div className="p-6 border-b border-gray-200">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-semibold text-gray-900">Educational Videos</h2>
+                <button
+                  onClick={closeYouTubeModal}
+                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <FiX className="h-6 w-6" />
+                </button>
+              </div>
+            </div>
+            <div className="overflow-y-auto max-h-[calc(90vh-80px)]">
+              <YouTubeRecommendations 
+                pdfId={selectedPdfForYouTube?._id || selectedPdfForYouTube?.id}
+                pdfTitle={selectedPdfForYouTube?.originalName}
+                onClose={closeYouTubeModal}
+              />
             </div>
           </div>
         </div>

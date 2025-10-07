@@ -85,4 +85,11 @@ export const progressAPI = {
   getAnalytics: (period) => api.get(`/progress/analytics?period=${period}`),
 };
 
+// YouTube API
+export const youtubeAPI = {
+  getRecommendations: (pdfId, params = {}) => api.get(`/youtube/recommendations/${pdfId}`, { params }),
+  getBatchRecommendations: (data) => api.post('/youtube/recommendations/batch', data),
+  getVideoDetails: (videoId) => api.get(`/youtube/video/${videoId}`)
+};
+
 export default api;

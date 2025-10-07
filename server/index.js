@@ -47,12 +47,14 @@ const pdfsModule = require('./routes/pdfs');
 const chatModule = require('./routes/chat');
 const quizModule = require('./routes/quiz');
 const progressModule = require('./routes/progress');
+const youtubeModule = require('./routes/youtube');
 
 app.use('/api/auth', resolveRouter(authModule, 'auth'));
 app.use('/api/pdfs', resolveRouter(pdfsModule, 'pdfs'));
 app.use('/api/chat', resolveRouter(chatModule, 'chat'));
 app.use('/api/quiz', resolveRouter(quizModule, 'quiz'));
 app.use('/api/progress', resolveRouter(progressModule, 'progress'));
+app.use('/api/youtube', resolveRouter(youtubeModule, 'youtube'));
 
 // Health check
 app.get('/api/health', (req, res) => {
