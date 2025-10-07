@@ -1,24 +1,31 @@
-# Study Buddy - Deployment Guide
+# Study Buddy - Complete Deployment Guide
 
-This guide provides step-by-step instructions for deploying the Study Buddy application to various platforms.
+[![Deployment](https://img.shields.io/badge/Deployment-Guide-blue.svg)](https://github.com/yourusername/study-buddy)
+[![Platforms](https://img.shields.io/badge/Platforms-Multi-green.svg)](https://studybuddy.com)
+[![Docker](https://img.shields.io/badge/Docker-Ready-blue.svg)](https://docker.com/)
+
+## 🎯 Overview
+
+This comprehensive guide covers deployment of Study Buddy across multiple platforms, from local development to production-scale deployments. Study Buddy is a full-stack application with AI-powered features requiring careful configuration of LLM APIs and database services.
 
 ## 🚀 Quick Start (Local Development)
 
 ### Prerequisites
-- Node.js (v14 or higher)
-- MongoDB (local or cloud)
-- Git
+- **Node.js**: v18+ (recommended: v20 LTS)
+- **MongoDB**: v6.0+ (local or cloud)
+- **Git**: Latest version
+- **Memory**: Minimum 4GB RAM (8GB recommended for AI features)
 
 ### 1. Clone and Setup
 ```bash
 # Clone the repository
-git clone <your-repo-url>
+git clone https://github.com/yourusername/study-buddy.git
 cd study-buddy
 
-# Run the setup script (Windows)
+# Quick setup (Windows)
 start.bat
 
-# Or run the setup script (Linux/Mac)
+# Quick setup (Linux/Mac)
 ./start.sh
 ```
 
@@ -28,11 +35,12 @@ start.bat
 npm run install-all
 
 # Create environment file
-cp server/env.example server/.env
+cp server/.env.example server/.env
 
 # Edit server/.env with your configuration
 # Required: MONGODB_URI, JWT_SECRET
-# Optional: OPENAI_API_KEY
+# AI Features: GROQ_API_KEY, GEMINI_API_KEY, OPENAI_API_KEY
+# YouTube: YOUTUBE_API_KEY
 
 # Seed database with sample data
 cd server && npm run seed && cd ..
@@ -44,7 +52,8 @@ npm run dev
 ### 3. Access the Application
 - **Frontend**: http://localhost:3000
 - **Backend API**: http://localhost:5000
-- **Demo Login**: student@demo.com / password
+- **Health Check**: http://localhost:5000/api/health
+- **Demo Login**: student@demo.com / password123
 
 ## 🌐 Production Deployment
 
@@ -230,26 +239,77 @@ docker-compose down
 
 ## 🔧 Environment Configuration
 
-### Required Environment Variables
+### Backend Environment Variables (server/.env)
 ```env
 # Server Configuration
 PORT=5000
 NODE_ENV=production
 
-# Database
+# Database (Required)
 MONGODB_URI=mongodb://localhost:27017/study-buddy
+# For MongoDB Atlas: mongodb+srv://username:password@cluster.mongodb.net/study-buddy
 
-# Authentication
+# Authentication (Required)
 JWT_SECRET=your-super-secret-jwt-key-minimum-32-characters
 
-# Optional: AI Features
+# AI/LLM APIs (Choose one or more)
+GROQ_API_KEY=your-groq-api-key-here
 OPENAI_API_KEY=your-openai-api-key-here
+GEMINI_API_KEY=your-gemini-api-key-here
+HF_API_TOKEN=your-hugging-face-token-here
+
+# YouTube Integration (Optional)
+YOUTUBE_API_KEY=your-youtube-data-api-key-here
+
+# File Upload Configuration
+MAX_FILE_SIZE=10485760  # 10MB in bytes
+UPLOAD_DIR=uploads
+
+# Security
+CORS_ORIGIN=http://localhost:3000
+RATE_LIMIT_WINDOW_MS=900000  # 15 minutes
+RATE_LIMIT_MAX_REQUESTS=100
 ```
 
-### Frontend Environment Variables
+### Frontend Environment Variables (client/.env)
 ```env
-# .env in client directory
+# API Configuration
 REACT_APP_API_URL=http://localhost:5000/api
+
+# Development vs Production
+REACT_APP_ENV=development
+
+# Optional: Analytics
+REACT_APP_GA_TRACKING_ID=your-google-analytics-id
+
+# Optional: Error Tracking
+REACT_APP_SENTRY_DSN=your-sentry-dsn
+```
+
+### Environment-Specific Configurations
+
+#### Development
+```env
+NODE_ENV=development
+DEBUG=study-buddy:*
+LOG_LEVEL=debug
+CORS_ORIGIN=http://localhost:3000
+```
+
+#### Staging
+```env
+NODE_ENV=staging
+LOG_LEVEL=info
+CORS_ORIGIN=https://staging.studybuddy.com
+MONGODB_URI=mongodb+srv://staging:password@cluster.mongodb.net/study-buddy-staging
+```
+
+#### Production
+```env
+NODE_ENV=production
+LOG_LEVEL=warn
+CORS_ORIGIN=https://studybuddy.com
+MONGODB_URI=mongodb+srv://prod:password@cluster.mongodb.net/study-buddy-prod
 ```
 
 ## 📊 Monitoring and Maintenance

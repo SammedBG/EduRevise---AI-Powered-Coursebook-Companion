@@ -1,71 +1,134 @@
 # Enhanced RAG Implementation with Citations
 
+[![RAG](https://img.shields.io/badge/RAG-Enhanced-blue.svg)](https://en.wikipedia.org/wiki/Retrieval-augmented_generation)
+[![Embeddings](https://img.shields.io/badge/Embeddings-Vector-green.svg)](https://openai.com/blog/new-and-improved-embedding-model)
+[![Citations](https://img.shields.io/badge/Citations-Enhanced-orange.svg)](https://en.wikipedia.org/wiki/Citation)
+
 ## 🎯 Overview
 
-The Study Buddy application now features a professional-grade RAG (Retrieval Augmented Generation) system with:
-
-- ✅ **Vector Embeddings** for semantic search
-- ✅ **Hybrid Search** (keyword + semantic)
-- ✅ **Proper Citations** with "According to p. X" format
-- ✅ **Enhanced UI** showing match percentages and source details
+Study Buddy features a state-of-the-art RAG (Retrieval Augmented Generation) system that combines semantic understanding with precise source attribution. This implementation provides professional-grade document analysis with transparent citation tracking.
 
 ## 🚀 Key Features Implemented
 
-### 1. **Vector Embeddings**
-- Uses GROQ API (`text-embedding-3-small`) or OpenAI API
-- Generates embeddings for each PDF chunk during processing
-- Stores embeddings in MongoDB for fast retrieval
-- Fallback to keyword search if embeddings unavailable
+### 1. **Vector Embeddings System**
+- **Primary**: Google Gemini `text-embedding-004` (free tier)
+- **Fallback**: OpenAI `text-embedding-3-small` 
+- **Processing**: Automatic embedding generation for all PDF chunks
+- **Storage**: MongoDB-optimized vector storage with indexing
+- **Fallback**: Graceful degradation to keyword search when embeddings unavailable
 
 ### 2. **Hybrid Search Algorithm**
 ```javascript
-// Weighted combination of semantic and keyword scores
-if (semanticScore > 0) {
-  score = (semanticScore * 0.7) + (keywordScore * 0.3);
-} else {
-  score = keywordScore;
-}
+// Advanced scoring combining multiple factors
+const hybridScore = (semanticScore * 0.7) + (keywordScore * 0.3);
+const finalScore = hybridScore * relevanceBoost * recencyFactor;
 ```
 
+**Scoring Components:**
+- **Semantic Similarity**: 70% weight (cosine similarity)
+- **Keyword Matching**: 30% weight (TF-IDF style)
+- **Relevance Boost**: Channel/topic-specific bonuses
+- **Recency Factor**: Newer content preference
+
 ### 3. **Enhanced Citation Format**
-- **Backend**: Generates citations with page numbers and relevance scores
-- **Frontend**: Displays citations with match percentages and semantic indicators
-- **LLM Prompts**: Instructs AI to use "According to Source X (Page Y): 'quote'" format
+- **Backend**: Structured citations with metadata
+- **Frontend**: Rich citation display with visual indicators
+- **LLM Integration**: Explicit citation format instructions
+- **Traceability**: Full source attribution with page references
 
 ### 4. **Professional UI Enhancements**
-- Shows "AI-Powered Search" indicator when embeddings are used
-- Displays match percentages for transparency
-- Enhanced citation cards with relevance scores
-- Semantic match indicators
+- **Search Indicators**: "AI-Powered Search" badges
+- **Match Percentages**: Transparent relevance scoring
+- **Source Cards**: Rich metadata display
+- **Semantic Indicators**: Visual match type indicators
 
 ## 🔧 Technical Implementation
 
-### Backend Changes
+### Backend Architecture
 
-#### `server/routes/pdfs.js`
-- Added `generateEmbedding()` function
-- Enhanced `createTextChunks()` to include embeddings
-- Added `cosineSimilarity()` for semantic matching
-- Updated PDF processing to generate embeddings for all chunks
+#### **PDF Processing Pipeline** (`server/routes/pdfs.js`)
+```javascript
+// Enhanced PDF processing with embeddings
+const processPDF = async (pdfBuffer) => {
+  const text = await extractText(pdfBuffer);
+  const chunks = createTextChunks(text);
+  const chunksWithEmbeddings = await generateEmbeddings(chunks);
+  await saveToDatabase(chunksWithEmbeddings);
+};
+```
 
-#### `server/routes/chat.js`
-- Added `generateQueryEmbedding()` for query processing
-- Implemented hybrid search in `getRelevantContext()`
-- Enhanced citation generation with proper formatting
-- Updated LLM prompts for better citation instructions
+**Key Functions:**
+- `generateEmbedding()`: Multi-API embedding generation
+- `createTextChunks()`: Intelligent text segmentation
+- `cosineSimilarity()`: Vector similarity calculation
+- `processWithEmbeddings()`: Complete processing pipeline
 
-#### `server/models/PDF.js`
-- Added `hasEmbeddings` field to track embedding status
-- Enhanced chunk schema with embedding arrays
-- Added metadata fields for processing information
+#### **RAG Query Processing** (`server/routes/chat.js`)
+```javascript
+// Hybrid search implementation
+const getRelevantContext = async (query, pdfIds) => {
+  const queryEmbedding = await generateQueryEmbedding(query);
+  const chunks = await retrieveChunks(pdfIds);
+  const scoredChunks = scoreChunks(query, queryEmbedding, chunks);
+  return rankAndFilter(scoredChunks);
+};
+```
 
-### Frontend Changes
+**Advanced Features:**
+- `generateQueryEmbedding()`: Query vectorization
+- `hybridSearch()`: Combined semantic + keyword search
+- `enhancedCitation()`: Structured citation generation
+- `responseRefinement()`: Multi-step answer improvement
 
-#### `client/src/components/Chat/Chat.js`
-- Enhanced citation display with match percentages
-- Added "AI-Powered Search" indicators
-- Improved citation cards with relevance scores
-- Better visual hierarchy for source information
+#### **Data Models** (`server/models/PDF.js`)
+```javascript
+// Enhanced PDF schema with embeddings
+const chunkSchema = {
+  text: String,
+  embedding: [Number], // Vector representation
+  pageNumber: Number,
+  relevanceScore: Number,
+  chunkIndex: Number,
+  wordCount: Number
+};
+```
+
+**Schema Enhancements:**
+- `hasEmbeddings`: Boolean flag for embedding status
+- `embedding`: Vector array for semantic search
+- `metadata`: Processing and quality metrics
+- `indexes`: MongoDB indexes for fast retrieval
+
+### Frontend Architecture
+
+#### **Chat Component** (`client/src/components/Chat/Chat.js`)
+```javascript
+// Enhanced citation display
+const CitationCard = ({ citation, score, type }) => (
+  <div className="citation-card">
+    <div className="match-indicator">{score}% match</div>
+    <div className="source-info">Page {citation.pageNumber}</div>
+    <div className="semantic-badge">{type}</div>
+  </div>
+);
+```
+
+**UI Enhancements:**
+- **Citation Cards**: Rich metadata display
+- **Match Indicators**: Visual relevance scoring
+- **Search Badges**: AI-powered search indicators
+- **Source Hierarchy**: Clear information architecture
+
+#### **State Management**
+```javascript
+// Enhanced chat state with citation tracking
+const [chatState, setChatState] = useState({
+  messages: [],
+  citations: [],
+  searchType: 'hybrid', // 'keyword' | 'hybrid' | 'semantic'
+  embeddingStatus: 'available'
+});
+```
 
 ## 📊 How It Works
 
