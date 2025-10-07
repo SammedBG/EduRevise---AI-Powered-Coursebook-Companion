@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FiPlay, FiCheck, FiHelpCircle, FiFileText } from 'react-icons/fi';
+import { FiPlay, FiCheck, FiHelpCircle, FiFileText, FiBookOpen, FiTarget, FiRefreshCw } from 'react-icons/fi';
 import { quizAPI, pdfAPI } from '../../services/api';
 import toast from 'react-hot-toast';
 
@@ -105,11 +105,17 @@ const Quiz = () => {
 
   if (!quizStarted && !quizCompleted) {
     return (
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-purple-50/30 pt-28">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-4">Practice Quiz</h1>
-          <p className="text-gray-600">
-            Select your study materials and generate a personalized quiz
+          <div className="flex justify-center mb-6">
+            <div className="w-16 h-16 bg-gradient-to-br from-purple-600 to-indigo-600 rounded-2xl flex items-center justify-center">
+              <FiTarget className="h-8 w-8 text-white" />
+            </div>
+          </div>
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent mb-4">Practice Quiz</h1>
+          <p className="text-gray-600 text-lg">
+            Select your study materials and generate a personalized quiz to test your knowledge
           </p>
         </div>
 
@@ -177,18 +183,19 @@ const Quiz = () => {
                     generateQuiz();
                   }}
                   disabled={(sourceMode === 'specific' && selectedPDFs.length === 0) || loading}
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+                  className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white px-8 py-4 rounded-xl font-semibold transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-3 shadow-lg hover:shadow-xl"
                 >
                   {loading ? (
-                    <div className="spinner"></div>
+                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                   ) : (
-                    <FiPlay className="h-5 w-5" />
+                    <FiPlay className="h-6 w-6" />
                   )}
-                  <span>{loading ? 'Generating...' : 'Generate Quiz'}</span>
+                  <span>{loading ? 'Generating Quiz...' : 'Generate Quiz'}</span>
                 </button>
               </div>
             </>
           )}
+        </div>
         </div>
       </div>
     );
@@ -196,7 +203,8 @@ const Quiz = () => {
 
   if (quizCompleted && results) {
     return (
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-purple-50/30 pt-28">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="bg-white rounded-lg shadow p-6">
           <div className="text-center mb-8">
             <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100 mb-4">
@@ -312,7 +320,7 @@ const Quiz = () => {
           <div className="flex justify-center space-x-4">
             <button
               onClick={resetQuiz}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors duration-200"
+              className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white px-8 py-4 rounded-xl font-semibold transition-all duration-200 shadow-lg hover:shadow-xl"
             >
               Take Another Quiz
             </button>
@@ -347,6 +355,7 @@ const Quiz = () => {
             )}
           </div>
         </div>
+        </div>
       </div>
     );
   }
@@ -356,7 +365,8 @@ const Quiz = () => {
     const isLastQuestion = currentQuestion === quiz.questions.length - 1;
 
     return (
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-purple-50/30 pt-28">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="bg-white rounded-lg shadow p-6">
           {/* Progress Bar */}
           <div className="mb-6">
@@ -370,7 +380,7 @@ const Quiz = () => {
             </div>
             <div className="w-full bg-gray-200 rounded-full h-2">
               <div
-                className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                className="bg-gradient-to-r from-purple-600 to-indigo-600 h-2 rounded-full transition-all duration-300"
                 style={{ width: `${((currentQuestion + 1) / quiz.questions.length) * 100}%` }}
               ></div>
             </div>
@@ -439,13 +449,14 @@ const Quiz = () => {
               ) : (
                 <button
                   onClick={nextQuestion}
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium transition-colors duration-200"
+                  className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white px-8 py-3 rounded-xl font-semibold transition-all duration-200 shadow-lg hover:shadow-xl"
                 >
                   Next Question
                 </button>
               )}
             </div>
           </div>
+        </div>
         </div>
       </div>
     );

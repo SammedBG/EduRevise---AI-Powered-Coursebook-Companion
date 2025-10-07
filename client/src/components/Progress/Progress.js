@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FiTrendingUp, FiTarget, FiClock, FiBookOpen, FiAward } from 'react-icons/fi';
+import { FiTrendingUp, FiTarget, FiClock, FiBookOpen, FiAward, FiBarChart3 } from 'react-icons/fi';
 import { progressAPI } from '../../services/api';
 import toast from 'react-hot-toast';
 
@@ -34,10 +34,10 @@ const Progress = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-purple-50/30 flex items-center justify-center">
         <div className="text-center">
-          <div className="spinner mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading your progress...</p>
+          <div className="w-16 h-16 border-4 border-purple-200 border-t-purple-600 rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600 font-medium">Loading your progress...</p>
         </div>
       </div>
     );
@@ -55,13 +55,21 @@ const Progress = () => {
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-purple-50/30 pt-28">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Your Progress</h1>
-        <p className="mt-2 text-gray-600">
-          Track your learning journey and see how you're improving
-        </p>
+        <div className="flex items-center space-x-4 mb-4">
+          <div className="w-16 h-16 bg-gradient-to-br from-purple-600 to-indigo-600 rounded-2xl flex items-center justify-center">
+            <FiBarChart3 className="h-8 w-8 text-white" />
+          </div>
+          <div>
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent">Your Progress</h1>
+            <p className="text-gray-600 text-lg">
+              Track your learning journey and see how you're improving
+            </p>
+          </div>
+        </div>
       </div>
 
       {/* Period Selector */}
@@ -269,6 +277,7 @@ const Progress = () => {
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 };

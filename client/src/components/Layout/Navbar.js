@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
-import { FiLogOut, FiUser, FiBell } from 'react-icons/fi';
+import { FiLogOut, FiUser, FiBell, FiBookOpen, FiMessageSquare, FiBarChart3, FiHome, FiHelpCircle } from 'react-icons/fi';
 import AuthContext from '../../contexts/AuthContext';
 import toast from 'react-hot-toast';
 
@@ -15,28 +15,44 @@ const Navbar = () => {
     navigate('/login');
   };
 
+  const navigationItems = [
+    { label: 'Dashboard', href: '/dashboard', icon: FiHome },
+    { label: 'Study Materials', href: '/pdfs', icon: FiBookOpen },
+    { label: 'AI Chat', href: '/chat', icon: FiMessageSquare },
+    { label: 'Practice Quiz', href: '/quiz', icon: FiHelpCircle },
+    { label: 'Progress', href: '/progress', icon: FiBarChart3 },
+  ];
+
   return (
-    <nav className="fixed top-0 left-0 right-0 bg-white/80 backdrop-blur shadow-sm border-b border-gray-200 z-40">
-      <div className="px-4 sm:px-6 lg:px-8">
+    <nav className="fixed top-0 left-0 right-0 bg-white/95 backdrop-blur-md shadow-lg border-b border-gray-100 z-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Main Header */}
         <div className="flex justify-between items-center h-16">
-          {/* Left side */}
-          <div className="flex items-center">
-            <div className="ml-0">
-              <h1 className="text-xl font-bold text-gray-900">Study Buddy</h1>
+          {/* Logo */}
+          <div className="flex items-center space-x-3">
+            <div className="w-10 h-10 bg-gradient-to-br from-purple-600 to-indigo-600 rounded-xl flex items-center justify-center">
+              <FiBookOpen className="h-6 w-6 text-white" />
+            </div>
+            <div>
+              <h1 className="text-xl font-bold bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent">
+                Study Buddy
+              </h1>
+              <p className="text-xs text-gray-500 -mt-1">AI Learning Companion</p>
             </div>
           </div>
 
           {/* Right side */}
           <div className="flex items-center space-x-4">
             {/* Notifications */}
-            <button className="p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100">
+            <button className="relative p-2 rounded-xl text-gray-600 hover:text-purple-600 hover:bg-purple-50 transition-all duration-200">
               <FiBell className="h-5 w-5" />
+              <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full"></span>
             </button>
 
             {/* User menu */}
             <div className="flex items-center space-x-3">
               <div className="hidden sm:block text-right">
-                <p className="text-sm font-medium text-gray-900">
+                <p className="text-sm font-semibold text-gray-900">
                   {user?.profile?.name || user?.username}
                 </p>
                 <p className="text-xs text-gray-500">
@@ -45,13 +61,13 @@ const Navbar = () => {
               </div>
               
               <div className="flex items-center space-x-2">
-                <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
-                  <FiUser className="h-4 w-4 text-white" />
+                <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-indigo-500 rounded-xl flex items-center justify-center shadow-md">
+                  <FiUser className="h-5 w-5 text-white" />
                 </div>
                 
                 <button
                   onClick={handleLogout}
-                  className="p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+                  className="p-2 rounded-xl text-gray-600 hover:text-red-600 hover:bg-red-50 transition-all duration-200"
                   title="Logout"
                 >
                   <FiLogOut className="h-4 w-4" />
@@ -60,27 +76,24 @@ const Navbar = () => {
             </div>
           </div>
         </div>
-        {/* Tabs */}
-        <div className="flex items-center space-x-2 h-10">
-          {[
-            { label: 'Dashboard', href: '/dashboard' },
-            { label: 'Study Materials', href: '/pdfs' },
-            { label: 'AI Chat', href: '/chat' },
-            { label: 'Practice Quiz', href: '/quiz' },
-            { label: 'Progress', href: '/progress' },
-          ].map(tab => {
+
+        {/* Navigation Tabs */}
+        <div className="flex items-center space-x-1 h-12 border-t border-gray-100">
+          {navigationItems.map(tab => {
             const isActive = location.pathname === tab.href || (tab.href === '/dashboard' && location.pathname === '/');
+            const Icon = tab.icon;
             return (
               <Link
                 key={tab.href}
                 to={tab.href}
-                className={`px-3 py-2 text-sm font-medium rounded-md transition-colors duration-200 ${
+                className={`flex items-center space-x-2 px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${
                   isActive
-                    ? 'bg-blue-600 text-white'
-                    : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
+                    ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-md'
+                    : 'text-gray-600 hover:text-purple-600 hover:bg-purple-50'
                 }`}
               >
-                {tab.label}
+                <Icon className="h-4 w-4" />
+                <span className="hidden sm:block">{tab.label}</span>
               </Link>
             );
           })}

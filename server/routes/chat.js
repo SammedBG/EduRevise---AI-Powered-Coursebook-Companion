@@ -126,6 +126,28 @@ router.post('/:id/messages', authenticateToken, async (req, res) => {
       timestamp: new Date()
     });
 
+    // Auto-generate chat title if it's still "New Chat" and this is the first exchange
+    if (chat.title === 'New Chat' && chat.messages.length === 2) {
+      try {
+        chat.title = await generateChatTitle(content);
+      } catch (error) {
+        console.error('Chat title generation failed:', error.message);
+        // Use fallback title generation
+        const words = content.toLowerCase().split(/\s+/);
+        const importantWords = words.filter(word => 
+          word.length > 3 && 
+          !['what', 'how', 'why', 'when', 'where', 'explain', 'tell', 'about', 'question'].includes(word)
+        );
+        if (importantWords.length > 0) {
+          chat.title = importantWords.slice(0, 3).map(word => 
+            word.charAt(0).toUpperCase() + word.slice(1)
+          ).join(' ');
+        } else {
+          chat.title = 'Study Chat';
+        }
+      }
+    }
+
     await chat.save();
 
     res.json({ 
@@ -207,6 +229,58 @@ async function generateQueryEmbedding(query) {
   } catch (error) {
     console.error('Query embedding generation failed:', error);
     return null;
+  }
+}
+
+// Auto-generate chat title from user's first message
+async function generateChatTitle(userMessage) {
+  try {
+    // Try GROQ API first
+    if (process.env.GROQ_API_KEY) {
+      const response = await axios.post('https://api.groq.com/openai/v1/chat/completions', {
+        model: 'llama-3.1-70b-versatile',
+        messages: [
+          {
+            role: 'system',
+            content: 'Generate a short, descriptive title (max 40 characters) for a study chat based on the user\'s question. Focus on the main topic or subject. Examples: "Physics - Laws of Motion", "Math - Algebra", "Biology - Cell Structure"'
+          },
+          {
+            role: 'user',
+            content: userMessage
+          }
+        ],
+        max_tokens: 50,
+        temperature: 0.7
+      }, {
+        headers: {
+          'Authorization': `Bearer ${process.env.GROQ_API_KEY}`,
+          'Content-Type': 'application/json'
+        },
+        timeout: 5000
+      });
+
+      if (response.data && response.data.choices && response.data.choices[0]) {
+        return response.data.choices[0].message.content.trim().replace(/['"]/g, '');
+      }
+    }
+    
+    // Fallback: simple keyword extraction
+    const words = userMessage.toLowerCase().split(/\s+/);
+    const importantWords = words.filter(word => 
+      word.length > 3 && 
+      !['what', 'how', 'why', 'when', 'where', 'explain', 'tell', 'about', 'question'].includes(word)
+    );
+    
+    if (importantWords.length > 0) {
+      return importantWords.slice(0, 3).map(word => 
+        word.charAt(0).toUpperCase() + word.slice(1)
+      ).join(' ');
+    }
+    
+    return 'Study Chat';
+  } catch (error) {
+    console.error('Chat title generation failed:', error.message);
+    return 'Study Chat';
   }
 }
 
@@ -331,10 +405,16 @@ async function getRelevantContext(query, pdfIds) {
 
     console.log(`Found ${relevantChunks.length} relevant chunks`);
 
-    // Sort by relevance and return top chunks
-    return relevantChunks
+    // Sort by relevance and return top 3 chunks, with truncation to keep context small
+    const topChunks = relevantChunks
       .sort((a, b) => b.relevanceScore - a.relevanceScore)
-      .slice(0, 5);
+      .slice(0, 3)
+      .map(c => ({
+        ...c,
+        text: (c.text || '').slice(0, 900) // keep each chunk under ~900 chars
+      }));
+
+    return topChunks;
   } catch (error) {
     console.error('Error getting relevant context:', error);
     return [];
@@ -418,6 +498,12 @@ async function generateResponse(userMessage, context, messageHistory) {
       });
     });
 
+    // Cap total context length to avoid LLM 400s
+    const MAX_CONTEXT_LEN = 2000;
+    if (contextString.length > MAX_CONTEXT_LEN) {
+      contextString = contextString.slice(0, MAX_CONTEXT_LEN);
+    }
+
     // Build conversation history
     let conversationHistory = '';
     messageHistory.slice(-6).forEach(msg => {
@@ -426,7 +512,17 @@ async function generateResponse(userMessage, context, messageHistory) {
 
     // Try GROQ API first (fast and reliable)
     if (process.env.GROQ_API_KEY) {
-      return await generateResponseWithGROQ(userMessage, contextString, conversationHistory, citations);
+      const response = await generateResponseWithGROQ(userMessage, contextString, conversationHistory, citations);
+      
+      // Refine the response for accuracy (only if main response is short)
+      if (response && response.content && citations.length > 0 && response.content.length < 300) {
+        const refinedResponse = await refineResponseWithGROQ(response.content, userMessage, contextString, citations);
+        if (refinedResponse && refinedResponse.content) {
+          return refinedResponse;
+        }
+      }
+      
+      return response;
     }
     
     // Try Hugging Face API
@@ -516,6 +612,51 @@ async function generateResponse(userMessage, context, messageHistory) {
 }
 
 // Generate response using GROQ API
+// Refine response for better accuracy
+async function refineResponseWithGROQ(initialResponse, userMessage, contextString, citations) {
+  try {
+    // Reduce context size for refinement to avoid 400 errors
+    const shortContext = contextString.slice(0, 800);
+    const shortResponse = initialResponse.slice(0, 200);
+    
+    const response = await axios.post('https://api.groq.com/openai/v1/chat/completions', {
+      model: 'llama-3.1-70b-versatile',
+      messages: [
+        {
+          role: 'system',
+          content: `Improve this answer for accuracy and completeness. Keep citations. Be concise.`
+        },
+        {
+          role: 'user',
+          content: `Context: ${shortContext}\n\nQuestion: ${userMessage}\n\nAnswer to improve: ${shortResponse}\n\nBetter answer:`
+        }
+      ],
+      max_tokens: 400,
+      temperature: 0.2
+    }, {
+      headers: {
+        'Authorization': `Bearer ${process.env.GROQ_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      timeout: 8000
+    });
+
+    if (response.data && response.data.choices && response.data.choices[0]) {
+      return {
+        content: response.data.choices[0].message.content.trim(),
+        citations: citations
+      };
+    }
+  } catch (error) {
+    console.error('Response refinement failed:', error.message);
+    // Return original response if refinement fails
+    return {
+      content: initialResponse,
+      citations: citations
+    };
+  }
+}
+
 async function generateResponseWithGROQ(userMessage, contextString, conversationHistory, citations) {
   const axios = require('axios');
   

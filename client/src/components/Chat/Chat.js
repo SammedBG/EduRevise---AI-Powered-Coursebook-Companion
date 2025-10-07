@@ -206,7 +206,7 @@ const Chat = () => {
       {/* Enhanced Chat List Sidebar */}
       <div className={`${sidebarCollapsed ? 'w-16' : 'w-80'} ${showMobileMenu ? 'block' : 'hidden'} lg:block transition-all duration-300 ease-in-out bg-white border-r border-gray-200 flex flex-col shadow-lg`}>
         {/* Sidebar Header */}
-        <div className="p-4 border-b border-gray-200 bg-gradient-to-r from-blue-600 to-indigo-600 text-white">
+        <div className="p-4 border-b border-gray-200 bg-gradient-to-r from-purple-600 to-indigo-600 text-white">
           <div className="flex items-center justify-between">
             {!sidebarCollapsed && (
               <div className="flex items-center space-x-2">
@@ -253,8 +253,8 @@ const Chat = () => {
         <div className="flex-1 overflow-y-auto bg-gray-50/50 chat-scrollbar">
           {filteredChats.length === 0 ? (
             <div className="p-6 text-center">
-              <div className="bg-blue-100 rounded-full p-4 w-16 h-16 mx-auto mb-4 flex items-center justify-center">
-                <FiMessageSquare className="h-8 w-8 text-blue-600" />
+              <div className="bg-purple-100 rounded-full p-4 w-16 h-16 mx-auto mb-4 flex items-center justify-center">
+                <FiMessageSquare className="h-8 w-8 text-purple-600" />
               </div>
               <p className="text-gray-600 font-medium mb-2">
                 {searchQuery ? 'No chats found' : 'No chats yet'}
@@ -265,7 +265,7 @@ const Chat = () => {
               {!searchQuery && (
                 <button
                   onClick={createNewChat}
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200"
+                  className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white px-6 py-3 rounded-xl text-sm font-semibold transition-all duration-200 shadow-lg hover:shadow-xl"
                 >
                   Start your first chat
                 </button>
@@ -278,7 +278,7 @@ const Chat = () => {
                   key={chat._id}
                   className={`group relative rounded-lg transition-all duration-200 ${
                     currentChat?._id === chat._id
-                      ? 'bg-blue-50 border border-blue-200 shadow-sm'
+                      ? 'bg-purple-50 border border-purple-200 shadow-sm'
                       : 'hover:bg-white hover:shadow-sm border border-transparent'
                   }`}
                 >
@@ -572,7 +572,7 @@ const Chat = () => {
                 <button
                   onClick={sendMessage}
                   disabled={!newMessage.trim() || sending}
-                  className="bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm hover:shadow-md btn-primary"
+                  className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white p-3 rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl"
                 >
                   <FiSend className="h-5 w-5" />
                 </button>

@@ -7,7 +7,13 @@ import {
   FiTrendingUp,
   FiBookOpen,
   FiClock,
-  FiTarget
+  FiTarget,
+  FiHome,
+  FiUsers,
+  FiAward,
+  FiBarChart3,
+  FiChevronRight,
+  FiStar
 } from 'react-icons/fi';
 import AuthContext from '../../contexts/AuthContext';
 import { progressAPI, pdfAPI, chatAPI } from '../../services/api';
@@ -45,269 +51,254 @@ const Dashboard = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-purple-50/30 flex items-center justify-center">
         <div className="text-center">
-          <div className="spinner mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading your dashboard...</p>
+          <div className="w-16 h-16 border-4 border-purple-200 border-t-purple-600 rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600 font-medium">Loading your learning dashboard...</p>
         </div>
       </div>
     );
   }
 
-  const stats = dashboardData?.overallStats || {
-    totalQuestions: 0,
-    correctAnswers: 0,
-    averageScore: 0,
-    currentStreak: 0
-  };
+  const stats = [
+    {
+      title: 'Study Materials',
+      value: recentPDFs.length,
+      icon: FiBookOpen,
+      color: 'from-purple-500 to-purple-600',
+      bgColor: 'bg-purple-50',
+      iconColor: 'text-purple-600'
+    },
+    {
+      title: 'Active Chats',
+      value: recentChats.length,
+      icon: FiMessageSquare,
+      color: 'from-indigo-500 to-indigo-600',
+      bgColor: 'bg-indigo-50',
+      iconColor: 'text-indigo-600'
+    },
+    {
+      title: 'Quizzes Taken',
+      value: dashboardData?.totalQuizzes || 0,
+      icon: FiHelpCircle,
+      color: 'from-pink-500 to-pink-600',
+      bgColor: 'bg-pink-50',
+      iconColor: 'text-pink-600'
+    },
+    {
+      title: 'Study Streak',
+      value: dashboardData?.currentStreak || 0,
+      icon: FiTarget,
+      color: 'from-emerald-500 to-emerald-600',
+      bgColor: 'bg-emerald-50',
+      iconColor: 'text-emerald-600'
+    }
+  ];
 
   const quickActions = [
     {
-      title: 'Upload Study Material',
-      description: 'Add new PDFs to your library',
+      title: 'Upload New PDF',
+      description: 'Add study materials to your library',
       icon: FiFileText,
-      href: '/pdfs',
-      color: 'bg-blue-500 hover:bg-blue-600'
+      link: '/pdfs',
+      color: 'bg-purple-500 hover:bg-purple-600'
     },
     {
-      title: 'Start New Chat',
+      title: 'Start AI Chat',
       description: 'Ask questions about your studies',
       icon: FiMessageSquare,
-      href: '/chat',
-      color: 'bg-green-500 hover:bg-green-600'
+      link: '/chat',
+      color: 'bg-indigo-500 hover:bg-indigo-600'
     },
     {
-      title: 'Take Practice Quiz',
+      title: 'Take Quiz',
       description: 'Test your knowledge',
       icon: FiHelpCircle,
-      href: '/quiz',
-      color: 'bg-purple-500 hover:bg-purple-600'
+      link: '/quiz',
+      color: 'bg-pink-500 hover:bg-pink-600'
     },
     {
       title: 'View Progress',
       description: 'Track your learning journey',
       icon: FiTrendingUp,
-      href: '/progress',
-      color: 'bg-orange-500 hover:bg-orange-600'
+      link: '/progress',
+      color: 'bg-emerald-500 hover:bg-emerald-600'
     }
   ];
 
   return (
-    <div className="px-4 sm:px-6 lg:px-8 py-8">
-      {/* Hero Section */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-8 mb-8">
-        <div className="max-w-6xl">
-          <p className="text-sm uppercase tracking-wider opacity-80 mb-2">Your AI Study Companion</p>
-          <h1 className="text-3xl md:text-4xl font-extrabold">
-            Welcome back, {user?.profile?.name || user?.username}!
-          </h1>
-          <p className="mt-3 text-blue-100 max-w-2xl">
-            Revise faster, practice smarter, and track your progress with AI-powered tools designed for students.
-          </p>
-          <div className="mt-6 flex flex-wrap gap-3">
-            <Link to="/quiz" className="bg-white text-blue-700 px-4 py-2 rounded-lg font-semibold hover:bg-blue-50 transition">Take a Quiz</Link>
-            <Link to="/pdfs" className="bg-blue-500/20 border border-white/30 px-4 py-2 rounded-lg font-semibold hover:bg-blue-500/30 transition">Upload PDFs</Link>
-          </div>
-        </div>
-        <div className="absolute -right-16 -top-16 w-64 h-64 bg-white/10 rounded-full blur-3xl" />
-        <div className="absolute -right-24 -bottom-24 w-80 h-80 bg-white/10 rounded-full blur-3xl" />
-      </div>
-
-      {/* Stats Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="flex items-center">
-            <div className="p-2 bg-blue-100 rounded-lg">
-              <FiTarget className="h-6 w-6 text-blue-600" />
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-purple-50/30 pt-28">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
+        {/* Header */}
+        <div className="mb-8">
+          <div className="flex items-center space-x-4 mb-4">
+            <div className="w-16 h-16 bg-gradient-to-br from-purple-600 to-indigo-600 rounded-2xl flex items-center justify-center shadow-lg">
+              <FiHome className="h-8 w-8 text-white" />
             </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Total Questions</p>
-              <p className="text-2xl font-bold text-gray-900">{stats.totalQuestions}</p>
+            <div>
+              <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent">
+                Welcome Back!
+              </h1>
+              <p className="text-gray-600 text-lg">
+                Ready to continue your learning journey, <span className="font-semibold text-purple-600">{user?.profile?.name || user?.username}</span>?
+              </p>
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="flex items-center">
-            <div className="p-2 bg-green-100 rounded-lg">
-              <FiTrendingUp className="h-6 w-6 text-green-600" />
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Average Score</p>
-              <p className="text-2xl font-bold text-gray-900">{stats.averageScore}%</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="flex items-center">
-            <div className="p-2 bg-purple-100 rounded-lg">
-              <FiClock className="h-6 w-6 text-purple-600" />
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Current Streak</p>
-              <p className="text-2xl font-bold text-gray-900">{stats.currentStreak} days</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="flex items-center">
-            <div className="p-2 bg-orange-100 rounded-lg">
-              <FiBookOpen className="h-6 w-6 text-orange-600" />
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Study Materials</p>
-              <p className="text-2xl font-bold text-gray-900">{recentPDFs.length}</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Quick Actions */}
-        <div className="lg:col-span-2">
-          <h2 className="text-xl font-bold text-gray-900 mb-6">Quick Actions</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {quickActions.map((action, index) => {
-              const Icon = action.icon;
-              return (
-                <Link
-                  key={index}
-                  to={action.href}
-                  className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow duration-200 group"
-                >
-                  <div className="flex items-center mb-4">
-                    <div className={`p-3 rounded-lg ${action.color} transition-colors duration-200`}>
-                      <Icon className="h-6 w-6 text-white" />
-                    </div>
-                    <div className="ml-4">
-                      <h3 className="text-lg font-semibold text-gray-900 group-hover:text-blue-600 transition-colors duration-200">
-                        {action.title}
-                      </h3>
-                    </div>
+        {/* Stats Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          {stats.map((stat, index) => {
+            const Icon = stat.icon;
+            return (
+              <div key={index} className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600 mb-1">{stat.title}</p>
+                    <p className="text-3xl font-bold text-gray-900">{stat.value}</p>
                   </div>
-                  <p className="text-gray-600">{action.description}</p>
-                </Link>
-              );
-            })}
-          </div>
+                  <div className={`w-12 h-12 ${stat.bgColor} rounded-xl flex items-center justify-center`}>
+                    <Icon className={`h-6 w-6 ${stat.iconColor}`} />
+                  </div>
+                </div>
+              </div>
+            );
+          })}
         </div>
 
-        {/* Recent Activity */}
-        <div className="space-y-6">
-          {/* Recent PDFs */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">Recent Materials</h3>
-              <Link
-                to="/pdfs"
-                className="text-sm text-blue-600 hover:text-blue-500 font-medium"
-              >
-                View All
-              </Link>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Quick Actions */}
+          <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
+            <div className="flex items-center space-x-3 mb-6">
+              <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-indigo-500 rounded-xl flex items-center justify-center">
+                <FiTarget className="h-5 w-5 text-white" />
+              </div>
+              <h2 className="text-xl font-bold text-gray-900">Quick Actions</h2>
             </div>
-            <div className="space-y-3">
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {quickActions.map((action, index) => {
+                const Icon = action.icon;
+                return (
+                  <Link
+                    key={index}
+                    to={action.link}
+                    className="group p-4 rounded-xl border border-gray-200 hover:border-purple-200 hover:shadow-md transition-all duration-200"
+                  >
+                    <div className="flex items-start space-x-3">
+                      <div className={`w-10 h-10 ${action.color} rounded-lg flex items-center justify-center transition-colors duration-200`}>
+                        <Icon className="h-5 w-5 text-white" />
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="font-semibold text-gray-900 group-hover:text-purple-600 transition-colors duration-200">
+                          {action.title}
+                        </h3>
+                        <p className="text-sm text-gray-600 mt-1">{action.description}</p>
+                      </div>
+                      <FiChevronRight className="h-5 w-5 text-gray-400 group-hover:text-purple-500 transition-colors duration-200" />
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Recent Activity */}
+          <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
+            <div className="flex items-center space-x-3 mb-6">
+              <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-xl flex items-center justify-center">
+                <FiClock className="h-5 w-5 text-white" />
+              </div>
+              <h2 className="text-xl font-bold text-gray-900">Recent Activity</h2>
+            </div>
+            
+            <div className="space-y-4">
               {recentPDFs.length > 0 ? (
-                recentPDFs.map((pdf) => (
-                  <div key={pdf.id} className="flex items-center space-x-3">
-                    <div className="p-2 bg-red-100 rounded-lg">
+                recentPDFs.map((pdf, index) => (
+                  <div key={index} className="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-50 transition-colors duration-200">
+                    <div className="w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center">
                       <FiFileText className="h-4 w-4 text-red-600" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-900 truncate">
-                        {pdf.originalName}
-                      </p>
-                      <p className="text-xs text-gray-500">
-                        {new Date(pdf.uploadDate).toLocaleDateString()}
-                      </p>
+                      <p className="text-sm font-medium text-gray-900 truncate">{pdf.originalName}</p>
+                      <p className="text-xs text-gray-500">Uploaded {new Date(pdf.uploadDate).toLocaleDateString()}</p>
+                    </div>
+                    <div className={`px-2 py-1 rounded-full text-xs font-medium ${
+                      pdf.content?.processed ? 'bg-emerald-100 text-emerald-700' : 'bg-yellow-100 text-yellow-700'
+                    }`}>
+                      {pdf.content?.processed ? 'Processed' : 'Processing'}
                     </div>
                   </div>
                 ))
               ) : (
-                <div className="text-center py-4">
-                  <FiFileText className="h-8 w-8 text-gray-400 mx-auto mb-2" />
-                  <p className="text-sm text-gray-500">No study materials yet</p>
-                  <Link
-                    to="/pdfs"
-                    className="text-sm text-blue-600 hover:text-blue-500 font-medium"
-                  >
+                <div className="text-center py-8">
+                  <FiBookOpen className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+                  <p className="text-gray-500">No study materials yet</p>
+                  <Link to="/pdfs" className="text-purple-600 hover:text-purple-700 font-medium text-sm">
                     Upload your first PDF
                   </Link>
                 </div>
               )}
             </div>
           </div>
+        </div>
 
-          {/* Recent Chats */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">Recent Chats</h3>
-              <Link
-                to="/chat"
-                className="text-sm text-blue-600 hover:text-blue-500 font-medium"
-              >
-                View All
-              </Link>
+        {/* Achievement Section */}
+        <div className="mt-8 bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
+          <div className="flex items-center space-x-3 mb-6">
+            <div className="w-10 h-10 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-xl flex items-center justify-center">
+              <FiAward className="h-5 w-5 text-white" />
             </div>
-            <div className="space-y-3">
-              {recentChats.length > 0 ? (
-                recentChats.map((chat) => (
-                  <div key={chat._id} className="flex items-center space-x-3">
-                    <div className="p-2 bg-green-100 rounded-lg">
-                      <FiMessageSquare className="h-4 w-4 text-green-600" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-900 truncate">
-                        {chat.title}
-                      </p>
-                      <p className="text-xs text-gray-500">
-                        {chat.messages?.length || 0} messages
-                      </p>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div className="text-center py-4">
-                  <FiMessageSquare className="h-8 w-8 text-gray-400 mx-auto mb-2" />
-                  <p className="text-sm text-gray-500">No chats yet</p>
-                  <Link
-                    to="/chat"
-                    className="text-sm text-blue-600 hover:text-blue-500 font-medium"
-                  >
-                    Start your first chat
-                  </Link>
-                </div>
-              )}
+            <h2 className="text-xl font-bold text-gray-900">Achievements</h2>
+          </div>
+          
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="flex items-center space-x-3 p-4 bg-gradient-to-r from-purple-50 to-indigo-50 rounded-xl">
+              <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
+                <FiBookOpen className="h-4 w-4 text-purple-600" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-gray-900">First Upload</p>
+                <p className="text-xs text-gray-600">Upload your first PDF</p>
+              </div>
+              <FiStar className="h-5 w-5 text-yellow-500" />
+            </div>
+            
+            <div className="flex items-center space-x-3 p-4 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl">
+              <div className="w-8 h-8 bg-indigo-100 rounded-lg flex items-center justify-center">
+                <FiMessageSquare className="h-4 w-4 text-indigo-600" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-gray-900">First Chat</p>
+                <p className="text-xs text-gray-600">Start your first AI conversation</p>
+              </div>
+              <FiStar className="h-5 w-5 text-yellow-500" />
+            </div>
+            
+            <div className="flex items-center space-x-3 p-4 bg-gradient-to-r from-pink-50 to-purple-50 rounded-xl">
+              <div className="w-8 h-8 bg-pink-100 rounded-lg flex items-center justify-center">
+                <FiHelpCircle className="h-4 w-4 text-pink-600" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-gray-900">Quiz Master</p>
+                <p className="text-xs text-gray-600">Complete your first quiz</p>
+              </div>
+              <FiStar className="h-5 w-5 text-yellow-500" />
+            </div>
+            
+            <div className="flex items-center space-x-3 p-4 bg-gradient-to-r from-emerald-50 to-purple-50 rounded-xl">
+              <div className="w-8 h-8 bg-emerald-100 rounded-lg flex items-center justify-center">
+                <FiTrendingUp className="h-4 w-4 text-emerald-600" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-gray-900">Progress Tracker</p>
+                <p className="text-xs text-gray-600">Track your learning progress</p>
+              </div>
+              <FiStar className="h-5 w-5 text-yellow-500" />
             </div>
           </div>
         </div>
       </div>
-
-      {/* Recommendations */}
-      {dashboardData?.recommendations && dashboardData.recommendations.length > 0 && (
-        <div className="mt-8 bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Learning Recommendations</h3>
-          <div className="space-y-3">
-            {dashboardData.recommendations.slice(0, 3).map((rec, index) => (
-              <div key={index} className="flex items-start space-x-3 p-3 bg-gray-50 rounded-lg">
-                <div className={`p-1 rounded-full ${
-                  rec.priority === 'high' ? 'bg-red-100' : 
-                  rec.priority === 'medium' ? 'bg-yellow-100' : 'bg-green-100'
-                }`}>
-                  <div className={`h-2 w-2 rounded-full ${
-                    rec.priority === 'high' ? 'bg-red-500' : 
-                    rec.priority === 'medium' ? 'bg-yellow-500' : 'bg-green-500'
-                  }`}></div>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-900">{rec.message}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   );
 };

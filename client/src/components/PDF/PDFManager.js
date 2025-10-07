@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FiFileText, FiTrash2, FiSearch, FiPlus, FiEye, FiX } from 'react-icons/fi';
+import { FiFileText, FiTrash2, FiSearch, FiPlus, FiEye, FiX, FiBookOpen, FiUpload, FiRefreshCw } from 'react-icons/fi';
 import { pdfAPI } from '../../services/api';
 import PDFViewer from './PDFViewer';
 import toast from 'react-hot-toast';
@@ -133,17 +133,22 @@ const PDFManager = () => {
         {/* Header */}
         <div className="mb-8">
         <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Study Materials</h1>
-            <p className="mt-2 text-gray-600">
-              Upload and manage your PDF coursebooks and study materials
-            </p>
+          <div className="flex items-center space-x-4">
+            <div className="w-12 h-12 bg-gradient-to-br from-purple-600 to-indigo-600 rounded-xl flex items-center justify-center">
+              <FiBookOpen className="h-6 w-6 text-white" />
+            </div>
+            <div>
+              <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent">Study Materials</h1>
+              <p className="mt-1 text-gray-600">
+                Upload and manage your PDF coursebooks and study materials
+              </p>
+            </div>
           </div>
           <button
             onClick={() => setShowUploadModal(true)}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors duration-200"
+            className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white px-6 py-3 rounded-xl flex items-center space-x-2 transition-all duration-200 shadow-lg hover:shadow-xl"
           >
-            <FiPlus className="h-5 w-5" />
+            <FiUpload className="h-5 w-5" />
             <span>Upload PDF</span>
           </button>
         </div>
@@ -161,7 +166,7 @@ const PDFManager = () => {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-            className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+            className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 shadow-sm"
           />
         </div>
       </div>
@@ -169,7 +174,7 @@ const PDFManager = () => {
       {/* PDF Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredPDFs.map((pdf) => (
-          <div key={toId(pdf)} className="bg-white rounded-lg shadow hover:shadow-md transition-shadow duration-200">
+          <div key={toId(pdf)} className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100 overflow-hidden">
             <div className="p-6">
               <div className="flex items-start justify-between mb-4">
                 <div className="p-3 bg-red-100 rounded-lg">
@@ -197,7 +202,7 @@ const PDFManager = () => {
               <div className="flex space-x-2">
                 <button 
                   onClick={() => handleViewPDF(pdf)}
-                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded text-sm font-medium transition-colors duration-200 flex items-center justify-center space-x-1"
+                  className="flex-1 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 flex items-center justify-center space-x-1 shadow-md hover:shadow-lg"
                 >
                   <FiEye className="h-4 w-4" />
                   <span>View</span>
@@ -235,7 +240,7 @@ const PDFManager = () => {
           {!searchQuery && (
             <button
               onClick={() => setShowUploadModal(true)}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors duration-200"
+              className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white px-8 py-4 rounded-xl font-semibold transition-all duration-200 shadow-lg hover:shadow-xl"
             >
               Upload Your First PDF
             </button>
@@ -276,9 +281,16 @@ const PDFManager = () => {
               <button
                 onClick={handleUpload}
                 disabled={!selectedFile || uploading}
-                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded font-medium transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white px-4 py-2 rounded-lg font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg"
               >
-                {uploading ? 'Uploading...' : 'Upload'}
+                {uploading ? (
+                  <div className="flex items-center justify-center space-x-2">
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    <span>Uploading...</span>
+                  </div>
+                ) : (
+                  'Upload'
+                )}
               </button>
             </div>
           </div>
@@ -304,10 +316,12 @@ const PDFManager = () => {
             </div>
             
             {/* PDF Viewer */}
-            <div className="flex-1 overflow-hidden">
-              <PDFViewer 
-                pdfUrl={`${process.env.REACT_APP_API_URL?.replace('/api', '') || 'http://localhost:5000'}/uploads/pdfs/${selectedPdf.filename}`}
-                filename={selectedPdf.originalName}
+            <div className="flex-1 overflow-hidden bg-gray-100 rounded-lg">
+              <iframe
+                src={`${process.env.REACT_APP_API_URL?.replace('/api', '') || 'http://localhost:5000'}/uploads/pdfs/${selectedPdf.filename}#toolbar=1&navpanes=1&scrollbar=1`}
+                className="w-full h-full rounded-lg"
+                title={selectedPdf.originalName}
+                style={{ minHeight: '600px' }}
               />
             </div>
           </div>
