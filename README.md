@@ -77,40 +77,6 @@ Study Buddy transforms static PDF study materials into an interactive learning e
 - **Error Handling**: Comprehensive error boundaries and user feedback
 - **Accessibility**: ARIA labels and keyboard navigation support
 
-### 🔄 Partially Implemented Features
-
-#### 1. **Advanced PDF Processing**
-- **OCR Integration**: Framework added but needs full implementation
-- **Image Extraction**: Basic support for PDF images
-- **Multi-language Support**: Limited to English text processing
-
-#### 2. **Enhanced Analytics**
-- **Learning Paths**: Basic recommendations, advanced path generation pending
-- **Peer Comparison**: Individual analytics, comparative analytics pending
-- **Export Features**: Data visualization, export functionality pending
-
-### ❌ Missing Features
-
-#### 1. **Collaborative Features**
-- **Study Groups**: Multi-user collaboration
-- **Shared PDFs**: PDF sharing between users
-- **Discussion Forums**: Topic-based discussions
-
-#### 2. **Advanced Learning Tools**
-- **Flashcards**: Spaced repetition system
-- **Note-taking**: Integrated note editor
-- **Bookmarking**: Save important sections
-
-#### 3. **Mobile Application**
-- **React Native App**: Mobile-specific features
-- **Offline Support**: Cached content for offline learning
-- **Push Notifications**: Learning reminders
-
-#### 4. **Advanced AI Features**
-- **Personalized Learning**: AI-driven study plans
-- **Adaptive Quizzing**: Difficulty adjustment based on performance
-- **Content Summarization**: Automatic PDF summarization
-
 ## 🛠️ Technology Stack
 
 ### Backend
@@ -153,7 +119,7 @@ Study Buddy transforms static PDF study materials into an interactive learning e
 
 ### 1. Clone the Repository
 ```bash
-git clone https://github.com/SammedBG/EduRevise---AI-Powered-Coursebook-Companion.git
+git clone https://github.com/SammedBG/Study-Buddy---AI-Powered-Learning-Companion.git
 cd study-buddy
 ```
 
