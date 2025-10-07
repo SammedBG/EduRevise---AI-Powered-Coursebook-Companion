@@ -164,23 +164,27 @@ router.delete('/:id', authenticateToken, async (req, res) => {
 // Helper function to get relevant context from PDFs
 async function getRelevantContext(query, pdfIds) {
   try {
-    const pdfs = await PDF.find({ 
+    console.log('Getting context for PDFs:', pdfIds);
+    
+    // First try to find PDFs with processed chunks
+    const processedPdfs = await PDF.find({ 
       _id: { $in: pdfIds },
-      'content.processed': true 
+      'content.processed': true,
+      'content.chunks': { $exists: true, $not: { $size: 0 } }
     });
 
     let relevantChunks = [];
 
-    for (const pdf of pdfs) {
-      if (pdf.content.chunks) {
+    // Process chunks from processed PDFs
+    for (const pdf of processedPdfs) {
+      if (pdf.content.chunks && pdf.content.chunks.length > 0) {
         for (const chunk of pdf.content.chunks) {
-          // Simple relevance scoring based on keyword matching
           const queryWords = query.toLowerCase().split(/\s+/);
           const chunkWords = chunk.text.toLowerCase();
           
           let score = 0;
           queryWords.forEach(word => {
-            if (chunkWords.includes(word)) {
+            if (chunkWords.includes(word) && word.length > 2) {
               score += 1;
             }
           });
@@ -196,6 +200,46 @@ async function getRelevantContext(query, pdfIds) {
       }
     }
 
+    // If no processed chunks found, use raw extracted text
+    if (relevantChunks.length === 0) {
+      console.log('No processed chunks found, using raw extracted text');
+      
+      const allPdfs = await PDF.find({ 
+        _id: { $in: pdfIds },
+        'content.extractedText': { $exists: true, $ne: '' }
+      });
+
+      for (const pdf of allPdfs) {
+        if (pdf.content.extractedText && pdf.content.extractedText.length > 50) {
+          const queryWords = query.toLowerCase().split(/\s+/);
+          const text = pdf.content.extractedText.toLowerCase();
+          
+          let score = 0;
+          queryWords.forEach(word => {
+            if (text.includes(word) && word.length > 2) {
+              score += 1;
+            }
+          });
+
+          if (score > 0) {
+            // Create chunks from the raw text
+            const textChunks = createTextChunks(pdf.content.extractedText, pdf._id);
+            
+            // Add the most relevant chunks
+            relevantChunks.push({
+              text: textChunks[0]?.text || pdf.content.extractedText.substring(0, 1000),
+              pdfId: pdf._id,
+              pageNumber: 1,
+              relevanceScore: score,
+              chunkIndex: 0
+            });
+          }
+        }
+      }
+    }
+
+    console.log(`Found ${relevantChunks.length} relevant chunks`);
+
     // Sort by relevance and return top chunks
     return relevantChunks
       .sort((a, b) => b.relevanceScore - a.relevanceScore)
@@ -204,6 +248,59 @@ async function getRelevantContext(query, pdfIds) {
     console.error('Error getting relevant context:', error);
     return [];
   }
+}
+
+// Helper function to create text chunks (same as in pdfs.js)
+function createTextChunks(text, pdfId) {
+  const chunks = [];
+  const maxChunkSize = 1000;
+  const overlap = 150;
+  const minChunkSize = 100;
+
+  let startIndex = 0;
+  let chunkIndex = 0;
+
+  const cleanedText = text
+    .replace(/\s+/g, ' ')
+    .replace(/\n\s*\n/g, '\n')
+    .trim();
+
+  while (startIndex < cleanedText.length) {
+    let endIndex = Math.min(startIndex + maxChunkSize, cleanedText.length);
+    
+    if (endIndex < cleanedText.length) {
+      const lastPeriod = cleanedText.lastIndexOf('.', endIndex);
+      const lastExclamation = cleanedText.lastIndexOf('!', endIndex);
+      const lastQuestion = cleanedText.lastIndexOf('?', endIndex);
+      const sentenceEnd = Math.max(lastPeriod, lastExclamation, lastQuestion);
+      
+      const lastNewline = cleanedText.lastIndexOf('\n', endIndex);
+      const breakPoint = Math.max(sentenceEnd, lastNewline);
+      
+      if (breakPoint > startIndex + maxChunkSize * 0.6) {
+        endIndex = breakPoint + 1;
+      }
+    }
+
+    const chunkText = cleanedText.substring(startIndex, endIndex).trim();
+    
+    if (chunkText.length >= minChunkSize) {
+      chunks.push({
+        text: chunkText,
+        pdfId: pdfId,
+        pageNumber: Math.floor(startIndex / (cleanedText.length / 10)) + 1,
+        startIndex,
+        endIndex,
+        chunkIndex: chunkIndex++,
+        wordCount: chunkText.split(/\s+/).length,
+        relevanceScore: 0.5
+      });
+    }
+
+    startIndex = Math.max(endIndex - overlap, startIndex + minChunkSize);
+  }
+
+  return chunks;
 }
 
 // Helper function to generate LLM response
@@ -324,35 +421,51 @@ async function generateResponse(userMessage, context, messageHistory) {
 async function generateResponseWithGROQ(userMessage, contextString, conversationHistory, citations) {
   const axios = require('axios');
   
-  // Simplify the prompt to avoid token limits
-  const prompt = `Context: ${contextString.substring(0, 2000)}\n\nQuestion: ${userMessage}\n\nAnswer based on the context provided. Be concise.`;
+  // Enhanced prompt with better context handling
+  const systemPrompt = `You are a precise study assistant. Answer questions based ONLY on the provided PDF content. 
+  
+Rules:
+1. If the answer is in the context, provide it with citations
+2. If the answer is NOT in the context, say "I don't find this information in the provided PDF content"
+3. Be accurate and cite sources when possible
+4. Keep answers concise but informative`;
+
+  const userPrompt = `PDF Content:
+${contextString}
+
+Question: ${userMessage}
+
+Answer based on the PDF content above. If the information is not available in the content, clearly state that.`;
 
   try {
+    console.log('Sending to GROQ with context length:', contextString.length);
+    
     const response = await axios.post('https://api.groq.com/openai/v1/chat/completions', {
       model: 'llama-3.3-70b-versatile',
       messages: [
         {
           role: 'system',
-          content: 'You are a helpful study assistant. Answer based on the provided context. If information is not in the context, say so.'
+          content: systemPrompt
         },
         {
           role: 'user',
-          content: prompt
+          content: userPrompt
         }
       ],
-      temperature: 0.3,
-      max_tokens: 500
+      temperature: 0.2,
+      max_tokens: 800
     }, {
       headers: {
         'Authorization': `Bearer ${process.env.GROQ_API_KEY}`,
         'Content-Type': 'application/json'
       },
-      timeout: 10000
+      timeout: 15000
     });
 
     if (response.data && response.data.choices && response.data.choices[0]) {
       const content = response.data.choices[0].message.content;
-      return { content, citations: citations.slice(0, 2) };
+      console.log('GROQ response received, length:', content.length);
+      return { content, citations: citations.slice(0, 3) };
     } else {
       throw new Error('Invalid response format from GROQ');
     }
@@ -393,13 +506,33 @@ async function generateResponseWithHuggingFace(userMessage, contextString, conve
 
 // Mock response generator for demo purposes
 async function generateMockResponse(userMessage, context) {
-  const responses = [
-    `Based on the content you've uploaded, I can help you understand the concepts. ${userMessage.includes('what') ? 'Let me explain what I found in your study materials.' : 'Here\'s what I can tell you about this topic.'}`,
-    `According to your study materials, ${userMessage.toLowerCase().includes('physics') ? 'this physics concept involves fundamental principles that are important to understand.' : 'this topic covers several key areas that you should focus on.'}`,
-    `I found relevant information in your PDFs that can help answer your question. The material suggests focusing on the core concepts and understanding the underlying principles.`
-  ];
+  let response = '';
   
-  return responses[Math.floor(Math.random() * responses.length)];
+  if (context && context.length > 0) {
+    // Use actual PDF content if available
+    const contextText = context[0].text || context[0];
+    response = `Based on the PDF content you've uploaded, here's what I found:
+
+"${contextText.substring(0, 300)}..."
+
+This appears to be relevant to your question: "${userMessage}"
+
+Note: This is a mock response. To get AI-powered answers based on your PDF content, please configure a GROQ, Hugging Face, Gemini, or OpenAI API key.`;
+  } else {
+    response = `I don't see any PDF content to answer your question "${userMessage}". 
+
+Please make sure you:
+1. Have uploaded a PDF
+2. Selected it in the chat interface
+3. The PDF has been processed successfully
+
+Note: This is a mock response. To get AI-powered answers, please configure an LLM API key (GROQ, Hugging Face, Gemini, or OpenAI).`;
+  }
+  
+  return { 
+    content: response, 
+    citations: context.slice(0, 2) 
+  };
 }
 
 module.exports = router;

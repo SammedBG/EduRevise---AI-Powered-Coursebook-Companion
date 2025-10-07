@@ -115,21 +115,21 @@ router.post('/upload', authenticateToken, upload.single('pdf'), async (req, res)
       }
     });
 
-    await pdf.save();
+        await pdf.save();
 
-    res.status(201).json({
-      message: 'PDF uploaded successfully',
-      pdf: {
-        _id: pdf._id,
-        filename: pdf.filename,
-        originalName: pdf.originalName,
-        size: pdf.size,
-        metadata: pdf.metadata,
-        uploadDate: pdf.uploadDate
-      }
-    });
-    
-    } catch (parseError) {
+        res.status(201).json({
+          message: 'PDF uploaded successfully',
+          pdf: {
+            _id: pdf._id,
+            filename: pdf.filename,
+            originalName: pdf.originalName,
+            size: pdf.size,
+            metadata: pdf.metadata,
+            uploadDate: pdf.uploadDate
+          }
+        });
+        
+      } catch (parseError) {
       console.error('PDF parsing error:', parseError);
       await fs.unlink(req.file.path); // Clean up file
       return res.status(400).json({ 
