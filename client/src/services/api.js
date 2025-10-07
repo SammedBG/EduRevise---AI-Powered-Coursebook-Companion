@@ -72,6 +72,7 @@ export const quizAPI = {
   getById: (id) => api.get(`/quiz/${id}`),
   submit: (id, answers) => api.post(`/quiz/${id}/submit`, answers),
   getResults: (id) => api.get(`/quiz/${id}/results`),
+  regenerate: (id, data) => api.post(`/quiz/${id}/regenerate`, data),
   delete: (id) => api.delete(`/quiz/${id}`),
 };
 

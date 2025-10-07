@@ -196,17 +196,18 @@ const Quiz = () => {
 
   if (quizCompleted && results) {
     return (
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="bg-white rounded-lg shadow p-6">
           <div className="text-center mb-8">
             <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100 mb-4">
               <FiCheck className="h-6 w-6 text-green-600" />
             </div>
             <h1 className="text-3xl font-bold text-gray-900 mb-2">Quiz Completed!</h1>
-            <p className="text-gray-600">Here are your results</p>
+            <p className="text-gray-600">Here are your detailed results</p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          {/* Summary Stats */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
             <div className="bg-blue-50 p-6 rounded-lg text-center">
               <h3 className="text-2xl font-bold text-blue-600">{results.correctAnswers}</h3>
               <p className="text-blue-800">Correct Answers</p>
@@ -219,8 +220,95 @@ const Quiz = () => {
               <h3 className="text-2xl font-bold text-purple-600">{results.totalQuestions}</h3>
               <p className="text-purple-800">Total Questions</p>
             </div>
+            <div className="bg-orange-50 p-6 rounded-lg text-center">
+              <h3 className="text-2xl font-bold text-orange-600">{results.earnedPoints || 0}</h3>
+              <p className="text-orange-800">Points Earned</p>
+            </div>
           </div>
 
+          {/* Detailed Question Results */}
+          {results.questionResults && (
+            <div className="mb-8">
+              <h2 className="text-2xl font-bold text-gray-900 mb-6">Question Review</h2>
+              <div className="space-y-6">
+                {results.questionResults.map((questionResult, index) => (
+                  <div key={index} className={`border rounded-lg p-6 ${
+                    questionResult.isCorrect ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'
+                  }`}>
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex items-center space-x-3">
+                        <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                          questionResult.isCorrect 
+                            ? 'bg-green-100 text-green-800' 
+                            : 'bg-red-100 text-red-800'
+                        }`}>
+                          {questionResult.isCorrect ? 'Correct' : 'Incorrect'}
+                        </span>
+                        <span className="px-2 py-1 bg-gray-100 text-gray-600 text-sm rounded">
+                          {questionResult.type.toUpperCase()}
+                        </span>
+                        <span className="px-2 py-1 bg-blue-100 text-blue-600 text-sm rounded">
+                          {questionResult.difficulty}
+                        </span>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-lg font-bold text-gray-900">
+                          {questionResult.score}/{questionResult.maxScore}
+                        </span>
+                        <p className="text-sm text-gray-500">points</p>
+                      </div>
+                    </div>
+
+                    <h3 className="text-lg font-semibold text-gray-900 mb-3">
+                      Q{index + 1}: {questionResult.question}
+                    </h3>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                      <div>
+                        <h4 className="font-medium text-gray-700 mb-2">Your Answer:</h4>
+                        <p className="text-gray-600 bg-white p-3 rounded border">
+                          {questionResult.userAnswer || 'No answer provided'}
+                        </p>
+                      </div>
+                      <div>
+                        <h4 className="font-medium text-gray-700 mb-2">Correct Answer:</h4>
+                        <p className="text-gray-600 bg-white p-3 rounded border">
+                          {questionResult.correctAnswer}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="mb-4">
+                      <h4 className="font-medium text-gray-700 mb-2">Feedback:</h4>
+                      <p className={`p-3 rounded ${
+                        questionResult.isCorrect ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                      }`}>
+                        {questionResult.feedback}
+                      </p>
+                    </div>
+
+                    <div>
+                      <h4 className="font-medium text-gray-700 mb-2">Explanation:</h4>
+                      <p className="text-gray-600 bg-white p-3 rounded border">
+                        {questionResult.explanation}
+                      </p>
+                    </div>
+
+                    {questionResult.source && (
+                      <div className="mt-4 pt-4 border-t border-gray-200">
+                        <h4 className="font-medium text-gray-700 mb-2">Source Reference:</h4>
+                        <p className="text-sm text-gray-500 italic">
+                          Page {questionResult.source.pageNumber}: "{questionResult.source.snippet}..."
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Action Buttons */}
           <div className="flex justify-center space-x-4">
             <button
               onClick={resetQuiz}
@@ -228,6 +316,35 @@ const Quiz = () => {
             >
               Take Another Quiz
             </button>
+            {quiz && (
+              <button
+                onClick={async () => {
+                  setLoading(true);
+                  try {
+                    const response = await quizAPI.regenerate(quiz._id, {
+                      difficulty: 'mixed',
+                      questionTypes: ['mcq', 'saq', 'laq'],
+                      numQuestions: 10
+                    });
+                    setQuiz(response.data.quiz);
+                    setQuizStarted(true);
+                    setQuizCompleted(false);
+                    setResults(null);
+                    setAnswers({});
+                    setCurrentQuestion(0);
+                    toast.success('New quiz generated!');
+                  } catch (error) {
+                    toast.error('Failed to generate new quiz');
+                  } finally {
+                    setLoading(false);
+                  }
+                }}
+                className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-medium transition-colors duration-200 flex items-center space-x-2"
+              >
+                <FiPlay className="h-5 w-5" />
+                <span>Generate New Questions</span>
+              </button>
+            )}
           </div>
         </div>
       </div>

@@ -25,10 +25,7 @@ app.use(limiter);
 app.use('/uploads', express.static('uploads'));
 
 // MongoDB connection
-mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/study-buddy', {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-});
+mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/study-buddy');
 
 mongoose.connection.on('connected', () => {
   console.log('Connected to MongoDB');

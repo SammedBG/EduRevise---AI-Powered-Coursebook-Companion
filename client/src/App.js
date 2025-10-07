@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
-import AuthContext from './contexts/AuthContext';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
 import Navbar from './components/Layout/Navbar';
 import Login from './components/Auth/Login';
 import Register from './components/Auth/Register';
@@ -10,72 +10,30 @@ import PDFManager from './components/PDF/PDFManager';
 import Chat from './components/Chat/Chat';
 import Quiz from './components/Quiz/Quiz';
 import Progress from './components/Progress/Progress';
-import { authAPI } from './services/api';
+import TestPage from './components/Test/TestPage';
 
-function App() {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    checkAuthStatus();
-  }, []);
-
-  const checkAuthStatus = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      if (token) {
-        const response = await authAPI.getProfile();
-        setUser(response.data.user);
-      }
-    } catch (error) {
-      localStorage.removeItem('token');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const login = (userData, token) => {
-    localStorage.setItem('token', token);
-    setUser(userData);
-  };
-
-  const logout = () => {
-    localStorage.removeItem('token');
-    setUser(null);
-  };
+function AppContent() {
+  const { user, loading } = useAuth();
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="spinner mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading Study Buddy...</p>
-        </div>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
       </div>
     );
   }
 
-  if (!user) {
-    return (
-      <Router>
-        <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-          <Toaster position="top-right" />
-          <Routes>
-            <Route path="/login" element={<Login onLogin={login} />} />
-            <Route path="/register" element={<Register onLogin={login} />} />
-            <Route path="*" element={<Navigate to="/login" replace />} />
-          </Routes>
-        </div>
-      </Router>
-    );
-  }
-
   return (
-    <AuthContext.Provider value={{ user, login, logout }}>
-      <Router>
+    <Router>
+      <Toaster position="top-right" />
+      {!user ? (
+        <Routes>
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="*" element={<Navigate to="/login" replace />} />
+        </Routes>
+      ) : (
         <div className="min-h-screen bg-gray-50">
-          <Toaster position="top-right" />
-          
           {/* Navbar */}
           <Navbar />
 
@@ -90,12 +48,21 @@ function App() {
               <Route path="/quiz" element={<Quiz />} />
               <Route path="/quiz/:quizId" element={<Quiz />} />
               <Route path="/progress" element={<Progress />} />
+              <Route path="/test" element={<TestPage />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </main>
         </div>
-      </Router>
-    </AuthContext.Provider>
+      )}
+    </Router>
+  );
+}
+
+function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
   );
 }
 

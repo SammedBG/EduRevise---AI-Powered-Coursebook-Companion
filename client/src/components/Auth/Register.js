@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { FiEye, FiEyeOff, FiBookOpen, FiUser, FiLock, FiMail } from 'react-icons/fi';
-import { authAPI } from '../../services/api';
+import { useAuth } from '../../contexts/AuthContext';
 import toast from 'react-hot-toast';
 
-const Register = ({ onLogin }) => {
+const Register = () => {
+  const { register } = useAuth();
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     username: '',
     email: '',
@@ -41,9 +43,9 @@ const Register = ({ onLogin }) => {
 
     try {
       const { confirmPassword, ...userData } = formData;
-      const response = await authAPI.register(userData);
-      onLogin(response.data.user, response.data.token);
+      await register(userData);
       toast.success('Account created successfully!');
+      navigate('/dashboard');
     } catch (error) {
       toast.error(error.response?.data?.error || 'Registration failed');
     } finally {

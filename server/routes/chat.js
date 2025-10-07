@@ -118,8 +118,8 @@ router.post('/:id/messages', authenticateToken, async (req, res) => {
     // Add assistant message with citations
     chat.messages.push({
       role: 'assistant',
-      content: response.content,
-      citations: response.citations,
+      content: response.content || 'I apologize, but I could not generate a response at this time. Please try again.',
+      citations: response.citations || [],
       timestamp: new Date()
     });
 
@@ -128,8 +128,8 @@ router.post('/:id/messages', authenticateToken, async (req, res) => {
     res.json({ 
       message: {
         role: 'assistant',
-        content: response.content,
-        citations: response.citations,
+        content: response.content || 'I apologize, but I could not generate a response at this time. Please try again.',
+        citations: response.citations || [],
         timestamp: chat.messages[chat.messages.length - 1].timestamp
       }
     });
@@ -229,6 +229,16 @@ async function generateResponse(userMessage, context, messageHistory) {
       conversationHistory += `${msg.role}: ${msg.content}\n`;
     });
 
+    // Try GROQ API first (fast and reliable)
+    if (process.env.GROQ_API_KEY) {
+      return await generateResponseWithGROQ(userMessage, contextString, conversationHistory, citations);
+    }
+    
+    // Try Hugging Face API
+    if (process.env.HF_API_TOKEN) {
+      return await generateResponseWithHuggingFace(userMessage, contextString, conversationHistory, citations);
+    }
+
     // If OpenAI is configured, use it
     if (openai) {
       const messages = [
@@ -307,6 +317,77 @@ async function generateResponse(userMessage, context, messageHistory) {
       content: "I'm sorry, I'm having trouble processing your request right now. Please try again later.",
       citations: []
     };
+  }
+}
+
+// Generate response using GROQ API
+async function generateResponseWithGROQ(userMessage, contextString, conversationHistory, citations) {
+  const axios = require('axios');
+  
+  // Simplify the prompt to avoid token limits
+  const prompt = `Context: ${contextString.substring(0, 2000)}\n\nQuestion: ${userMessage}\n\nAnswer based on the context provided. Be concise.`;
+
+  try {
+    const response = await axios.post('https://api.groq.com/openai/v1/chat/completions', {
+      model: 'llama-3.3-70b-versatile',
+      messages: [
+        {
+          role: 'system',
+          content: 'You are a helpful study assistant. Answer based on the provided context. If information is not in the context, say so.'
+        },
+        {
+          role: 'user',
+          content: prompt
+        }
+      ],
+      temperature: 0.3,
+      max_tokens: 500
+    }, {
+      headers: {
+        'Authorization': `Bearer ${process.env.GROQ_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      timeout: 10000
+    });
+
+    if (response.data && response.data.choices && response.data.choices[0]) {
+      const content = response.data.choices[0].message.content;
+      return { content, citations: citations.slice(0, 2) };
+    } else {
+      throw new Error('Invalid response format from GROQ');
+    }
+  } catch (error) {
+    console.error('GROQ response generation failed:', error.response?.data || error.message);
+    return generateMockResponse(userMessage, citations);
+  }
+}
+
+// Generate response using Hugging Face API
+async function generateResponseWithHuggingFace(userMessage, contextString, conversationHistory, citations) {
+  const axios = require('axios');
+  
+  const prompt = `Context from PDFs:\n${contextString}\n\nQuestion: ${userMessage}\n\nAnswer based only on the context provided. Be concise and cite sources.`;
+
+  try {
+    const response = await axios.post('https://api-inference.huggingface.co/models/microsoft/DialoGPT-large', {
+      inputs: prompt,
+      parameters: {
+        max_length: 500,
+        temperature: 0.3,
+        do_sample: true
+      }
+    }, {
+      headers: {
+        'Authorization': `Bearer ${process.env.HF_API_TOKEN}`,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    const content = response.data[0].generated_text;
+    return { content, citations: citations.slice(0, 3) };
+  } catch (error) {
+    console.error('Hugging Face response generation failed:', error);
+    return generateMockResponse(userMessage, citations);
   }
 }
 

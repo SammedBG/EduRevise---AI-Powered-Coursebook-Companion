@@ -33,7 +33,7 @@ A comprehensive web application that helps school students revise from their cou
 - **JWT** for authentication
 - **Multer** for file uploads
 - **PDF-Parse** for PDF text extraction
-- **OpenAI API** integration (configurable)
+- **Multiple LLM Support**: GROQ, Hugging Face, Gemini, OpenAI APIs
 
 ### Development Tools
 - **Concurrently** for running frontend and backend simultaneously
@@ -44,7 +44,11 @@ A comprehensive web application that helps school students revise from their cou
 
 - Node.js (v14 or higher)
 - MongoDB (local or cloud instance)
-- OpenAI API key (optional, for enhanced AI features)
+- **LLM API Key** (choose one):
+  - **GROQ API** (Recommended - Fast & Free tier available)
+  - **Hugging Face API** (Free tier available)
+  - **Google Gemini API** (Paid)
+  - **OpenAI API** (Paid)
 
 ## 🚀 Installation & Setup
 
@@ -76,9 +80,14 @@ nano server/.env
 ```env
 PORT=5000
 MONGODB_URI=mongodb://localhost:27017/study-buddy
-OPENAI_API_KEY=your_openai_api_key_here
 JWT_SECRET=your_jwt_secret_here
 NODE_ENV=development
+
+# LLM API Keys (choose one or more)
+GROQ_API_KEY=your_groq_api_key_here          # Recommended - Fast & Free
+HF_API_TOKEN=your_huggingface_token_here     # Free tier available
+GEMINI_API_KEY=your_gemini_api_key_here      # Paid
+OPENAI_API_KEY=your_openai_api_key_here      # Paid
 ```
 
 ### 4. Database Setup

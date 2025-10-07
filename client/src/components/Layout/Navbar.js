@@ -67,7 +67,8 @@ const Navbar = () => {
             { label: 'Study Materials', href: '/pdfs' },
             { label: 'AI Chat', href: '/chat' },
             { label: 'Practice Quiz', href: '/quiz' },
-            { label: 'Progress', href: '/progress' }
+            { label: 'Progress', href: '/progress' },
+            { label: '🧪 Test', href: '/test' }
           ].map(tab => {
             const isActive = location.pathname === tab.href || (tab.href === '/dashboard' && location.pathname === '/');
             return (

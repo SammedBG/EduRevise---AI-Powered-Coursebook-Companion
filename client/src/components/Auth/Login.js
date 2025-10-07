@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { FiEye, FiEyeOff, FiBookOpen, FiUser, FiLock } from 'react-icons/fi';
-import { authAPI } from '../../services/api';
+import { useAuth } from '../../contexts/AuthContext';
 import toast from 'react-hot-toast';
 
-const Login = ({ onLogin }) => {
+const Login = () => {
+  const { login } = useAuth();
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     email: '',
     password: ''
@@ -24,9 +26,9 @@ const Login = ({ onLogin }) => {
     setLoading(true);
 
     try {
-      const response = await authAPI.login(formData);
-      onLogin(response.data.user, response.data.token);
+      await login(formData);
       toast.success('Welcome back!');
+      navigate('/dashboard');
     } catch (error) {
       toast.error(error.response?.data?.error || 'Login failed');
     } finally {

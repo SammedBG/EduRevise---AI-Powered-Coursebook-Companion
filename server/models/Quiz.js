@@ -44,17 +44,39 @@ const attemptSchema = new mongoose.Schema({
     ref: 'User',
     required: true
   },
-  questionId: {
-    type: mongoose.Schema.Types.ObjectId,
-    required: true
+  answers: [String], // Array of user answers
+  timeSpent: {
+    type: Number,
+    default: 0
   },
-  answer: String,
-  isCorrect: Boolean,
-  timeSpent: Number, // in seconds
-  timestamp: {
+  score: Number,
+  percentage: Number,
+  correctAnswers: Number,
+  totalQuestions: Number,
+  questionResults: [{
+    questionIndex: { type: Number },
+    question: { type: String },
+    userAnswer: { type: String },
+    correctAnswer: { type: String },
+    isCorrect: { type: Boolean },
+    score: { type: Number },
+    maxScore: { type: Number },
+    feedback: { type: String },
+    explanation: { type: String },
+    type: { type: String },
+    difficulty: { type: String },
+    source: {
+      pdfId: { type: mongoose.Schema.Types.ObjectId },
+      pageNumber: { type: Number },
+      snippet: { type: String }
+    }
+  }],
+  submittedAt: {
     type: Date,
     default: Date.now
-  }
+  },
+  difficulty: String,
+  questionTypes: [String]
 });
 
 const quizSchema = new mongoose.Schema({
