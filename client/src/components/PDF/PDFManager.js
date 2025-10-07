@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { FiFileText, FiTrash2, FiSearch, FiPlus } from 'react-icons/fi';
+import { FiFileText, FiTrash2, FiSearch, FiPlus, FiEye, FiX } from 'react-icons/fi';
 import { pdfAPI } from '../../services/api';
+import PDFViewer from './PDFViewer';
 import toast from 'react-hot-toast';
 
 const PDFManager = () => {
@@ -10,6 +11,8 @@ const PDFManager = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
+  const [showViewer, setShowViewer] = useState(false);
+  const [selectedPdf, setSelectedPdf] = useState(null);
 
   useEffect(() => {
     fetchPDFs();
@@ -97,6 +100,16 @@ const PDFManager = () => {
     }
   };
 
+  const handleViewPDF = (pdf) => {
+    setSelectedPdf(pdf);
+    setShowViewer(true);
+  };
+
+  const closeViewer = () => {
+    setShowViewer(false);
+    setSelectedPdf(null);
+  };
+
   const toId = (pdf) => pdf.id || pdf._id;
   const filteredPDFs = pdfs.filter(pdf =>
     (pdf.originalName || '').toLowerCase().includes(searchQuery.toLowerCase())
@@ -114,9 +127,11 @@ const PDFManager = () => {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      {/* Header */}
-      <div className="mb-8">
+    <div className={`${showViewer ? 'flex' : ''} max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8`}>
+      {/* Main Content */}
+      <div className={`${showViewer ? 'w-1/2 pr-4' : 'w-full'}`}>
+        {/* Header */}
+        <div className="mb-8">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Study Materials</h1>
@@ -180,8 +195,12 @@ const PDFManager = () => {
               </div>
 
               <div className="flex space-x-2">
-                <button className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded text-sm font-medium transition-colors duration-200">
-                  View
+                <button 
+                  onClick={() => handleViewPDF(pdf)}
+                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded text-sm font-medium transition-colors duration-200 flex items-center justify-center space-x-1"
+                >
+                  <FiEye className="h-4 w-4" />
+                  <span>View</span>
                 </button>
                 <button
                   onClick={() => handleProcess(toId(pdf))}
@@ -261,6 +280,35 @@ const PDFManager = () => {
               >
                 {uploading ? 'Uploading...' : 'Upload'}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+      </div>
+
+      {/* PDF Viewer */}
+      {showViewer && selectedPdf && (
+        <div className="w-1/2 pl-4">
+          <div className="bg-white rounded-lg shadow-lg h-full flex flex-col">
+            {/* Viewer Header */}
+            <div className="flex items-center justify-between p-4 border-b border-gray-200">
+              <h3 className="text-lg font-semibold text-gray-900 truncate">
+                {selectedPdf.originalName}
+              </h3>
+              <button
+                onClick={closeViewer}
+                className="text-gray-400 hover:text-gray-600 transition-colors duration-200"
+              >
+                <FiX className="h-5 w-5" />
+              </button>
+            </div>
+            
+            {/* PDF Viewer */}
+            <div className="flex-1 overflow-hidden">
+              <PDFViewer 
+                pdfUrl={`${process.env.REACT_APP_API_URL?.replace('/api', '') || 'http://localhost:5000'}/uploads/pdfs/${selectedPdf.filename}`}
+                filename={selectedPdf.originalName}
+              />
             </div>
           </div>
         </div>
