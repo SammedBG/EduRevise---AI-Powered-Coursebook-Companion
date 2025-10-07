@@ -36,9 +36,19 @@ const pdfSchema = new mongoose.Schema({
       pageNumber: Number,
       startIndex: Number,
       endIndex: Number,
-      embedding: [Number]
+      embedding: [Number],
+      chunkIndex: Number,
+      wordCount: Number,
+      relevanceScore: Number
     }],
     processed: {
+      type: Boolean,
+      default: false
+    },
+    processedAt: Date,
+    processingMethod: String,
+    totalTextLength: Number,
+    hasEmbeddings: {
       type: Boolean,
       default: false
     }

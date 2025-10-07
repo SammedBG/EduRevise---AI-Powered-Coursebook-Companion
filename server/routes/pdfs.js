@@ -4,6 +4,7 @@ const path = require('path');
 const fs = require('fs').promises;
 const pdfParse = require('pdf-parse');
 const Tesseract = require('tesseract.js');
+const axios = require('axios');
 const PDF = require('../models/PDF');
 const { authenticateToken } = require('./auth');
 const router = express.Router();
@@ -313,12 +314,44 @@ router.post('/:id/process', authenticateToken, async (req, res) => {
     // Enhanced chunking with better text processing
     const chunks = createTextChunks(extractedText, pdf._id);
 
+    // Generate embeddings for each chunk
+    console.log(`Generating embeddings for ${chunks.length} chunks...`);
+    const chunksWithEmbeddings = [];
+    
+    for (let i = 0; i < chunks.length; i++) {
+      const chunk = chunks[i];
+      console.log(`Processing chunk ${i + 1}/${chunks.length}`);
+      
+      try {
+        // Generate embedding for this chunk
+        const embedding = await generateEmbedding(chunk.text);
+        
+        chunksWithEmbeddings.push({
+          ...chunk,
+          embedding: embedding.length > 0 ? embedding : undefined
+        });
+        
+        // Add small delay to avoid rate limiting
+        if (i < chunks.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, 100));
+        }
+      } catch (error) {
+        console.error(`Failed to generate embedding for chunk ${i + 1}:`, error);
+        // Still include the chunk without embedding
+        chunksWithEmbeddings.push({
+          ...chunk,
+          embedding: undefined
+        });
+      }
+    }
+
     // Update PDF with processed chunks
-    pdf.content.chunks = chunks;
+    pdf.content.chunks = chunksWithEmbeddings;
     pdf.content.processed = true;
     pdf.content.processedAt = new Date();
     pdf.content.processingMethod = processingMethod;
     pdf.content.totalTextLength = extractedText.length;
+    pdf.content.hasEmbeddings = chunksWithEmbeddings.some(chunk => chunk.embedding && chunk.embedding.length > 0);
     
     await pdf.save();
 
@@ -334,6 +367,97 @@ router.post('/:id/process', authenticateToken, async (req, res) => {
     res.status(500).json({ error: 'Failed to process PDF' });
   }
 });
+
+// Helper function to generate embeddings for text
+async function generateEmbedding(text) {
+  try {
+    // Try GROQ API first (faster and more reliable)
+    if (process.env.GROQ_API_KEY) {
+      return await generateEmbeddingWithGROQ(text);
+    }
+    
+    // Try OpenAI API
+    if (process.env.OPENAI_API_KEY) {
+      return await generateEmbeddingWithOpenAI(text);
+    }
+    
+    // Fallback: return empty array (will use keyword search only)
+    console.warn('No embedding API configured, using keyword search only');
+    return [];
+  } catch (error) {
+    console.error('Embedding generation failed:', error);
+    return [];
+  }
+}
+
+// Generate embedding using GROQ API
+async function generateEmbeddingWithGROQ(text) {
+  try {
+    const response = await axios.post('https://api.groq.com/openai/v1/embeddings', {
+      model: 'text-embedding-3-small',
+      input: text,
+      encoding_format: 'float'
+    }, {
+      headers: {
+        'Authorization': `Bearer ${process.env.GROQ_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      timeout: 10000
+    });
+
+    if (response.data && response.data.data && response.data.data[0]) {
+      return response.data.data[0].embedding;
+    } else {
+      throw new Error('Invalid embedding response from GROQ');
+    }
+  } catch (error) {
+    console.error('GROQ embedding generation failed:', error.response?.data || error.message);
+    throw error;
+  }
+}
+
+// Generate embedding using OpenAI API
+async function generateEmbeddingWithOpenAI(text) {
+  try {
+    const response = await axios.post('https://api.openai.com/v1/embeddings', {
+      model: 'text-embedding-3-small',
+      input: text,
+      encoding_format: 'float'
+    }, {
+      headers: {
+        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      timeout: 10000
+    });
+
+    if (response.data && response.data.data && response.data.data[0]) {
+      return response.data.data[0].embedding;
+    } else {
+      throw new Error('Invalid embedding response from OpenAI');
+    }
+  } catch (error) {
+    console.error('OpenAI embedding generation failed:', error.response?.data || error.message);
+    throw error;
+  }
+}
+
+// Helper function to calculate cosine similarity
+function cosineSimilarity(vecA, vecB) {
+  if (vecA.length !== vecB.length) return 0;
+  
+  let dotProduct = 0;
+  let normA = 0;
+  let normB = 0;
+  
+  for (let i = 0; i < vecA.length; i++) {
+    dotProduct += vecA[i] * vecB[i];
+    normA += vecA[i] * vecA[i];
+    normB += vecB[i] * vecB[i];
+  }
+  
+  return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
+}
 
 // Helper function to create better text chunks
 function createTextChunks(text, pdfId) {

@@ -1,5 +1,6 @@
 const express = require('express');
 const OpenAI = require('openai');
+const axios = require('axios');
 const Chat = require('../models/Chat');
 const PDF = require('../models/PDF');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
@@ -161,7 +162,72 @@ router.delete('/:id', authenticateToken, async (req, res) => {
   }
 });
 
-// Helper function to get relevant context from PDFs
+// Helper function to generate query embedding
+async function generateQueryEmbedding(query) {
+  try {
+    // Try GROQ API first
+    if (process.env.GROQ_API_KEY) {
+      const response = await axios.post('https://api.groq.com/openai/v1/embeddings', {
+        model: 'text-embedding-3-small',
+        input: query,
+        encoding_format: 'float'
+      }, {
+        headers: {
+          'Authorization': `Bearer ${process.env.GROQ_API_KEY}`,
+          'Content-Type': 'application/json'
+        },
+        timeout: 10000
+      });
+
+      if (response.data && response.data.data && response.data.data[0]) {
+        return response.data.data[0].embedding;
+      }
+    }
+    
+    // Try OpenAI API
+    if (process.env.OPENAI_API_KEY) {
+      const response = await axios.post('https://api.openai.com/v1/embeddings', {
+        model: 'text-embedding-3-small',
+        input: query,
+        encoding_format: 'float'
+      }, {
+        headers: {
+          'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+          'Content-Type': 'application/json'
+        },
+        timeout: 10000
+      });
+
+      if (response.data && response.data.data && response.data.data[0]) {
+        return response.data.data[0].embedding;
+      }
+    }
+    
+    return null;
+  } catch (error) {
+    console.error('Query embedding generation failed:', error);
+    return null;
+  }
+}
+
+// Helper function to calculate cosine similarity
+function cosineSimilarity(vecA, vecB) {
+  if (!vecA || !vecB || vecA.length !== vecB.length) return 0;
+  
+  let dotProduct = 0;
+  let normA = 0;
+  let normB = 0;
+  
+  for (let i = 0; i < vecA.length; i++) {
+    dotProduct += vecA[i] * vecB[i];
+    normA += vecA[i] * vecA[i];
+    normB += vecB[i] * vecB[i];
+  }
+  
+  return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
+}
+
+// Helper function to get relevant context from PDFs with hybrid search
 async function getRelevantContext(query, pdfIds) {
   try {
     console.log('Getting context for PDFs:', pdfIds);
@@ -174,26 +240,49 @@ async function getRelevantContext(query, pdfIds) {
     });
 
     let relevantChunks = [];
+    
+    // Generate query embedding for semantic search
+    const queryEmbedding = await generateQueryEmbedding(query);
+    console.log('Query embedding generated:', queryEmbedding ? 'Yes' : 'No');
 
-    // Process chunks from processed PDFs
+    // Process chunks from processed PDFs with hybrid search
     for (const pdf of processedPdfs) {
       if (pdf.content.chunks && pdf.content.chunks.length > 0) {
         for (const chunk of pdf.content.chunks) {
+          let score = 0;
+          
+          // 1. Keyword-based scoring (existing logic)
           const queryWords = query.toLowerCase().split(/\s+/);
           const chunkWords = chunk.text.toLowerCase();
           
-          let score = 0;
+          let keywordScore = 0;
           queryWords.forEach(word => {
             if (chunkWords.includes(word) && word.length > 2) {
-              score += 1;
+              keywordScore += 1;
             }
           });
+          
+          // 2. Semantic similarity scoring (new)
+          let semanticScore = 0;
+          if (queryEmbedding && chunk.embedding && chunk.embedding.length > 0) {
+            semanticScore = cosineSimilarity(queryEmbedding, chunk.embedding);
+          }
+          
+          // 3. Hybrid scoring (weighted combination)
+          // Give more weight to semantic similarity when available
+          if (semanticScore > 0) {
+            score = (semanticScore * 0.7) + (keywordScore * 0.3);
+          } else {
+            score = keywordScore;
+          }
 
-          if (score > 0) {
+          if (score > 0.1) { // Lower threshold to catch more relevant content
             relevantChunks.push({
               ...chunk,
               pdfId: pdf._id,
-              relevanceScore: score
+              relevanceScore: score,
+              keywordScore: keywordScore,
+              semanticScore: semanticScore
             });
           }
         }
@@ -306,17 +395,22 @@ function createTextChunks(text, pdfId) {
 // Helper function to generate LLM response
 async function generateResponse(userMessage, context, messageHistory) {
   try {
-    // Build context string
+    // Build context string with proper citation format
     let contextString = '';
     const citations = [];
 
     context.forEach((chunk, index) => {
-      contextString += `Source ${index + 1}:\n${chunk.text}\n\n`;
+      const sourceLabel = `Source ${index + 1} (Page ${chunk.pageNumber})`;
+      contextString += `${sourceLabel}:\n${chunk.text}\n\n`;
+      
+      // Create citation with proper format
       citations.push({
         pdfId: chunk.pdfId,
         pageNumber: chunk.pageNumber,
         snippet: chunk.text.substring(0, 200) + '...',
-        relevanceScore: chunk.relevanceScore
+        relevanceScore: chunk.relevanceScore,
+        sourceLabel: sourceLabel,
+        fullText: chunk.text
       });
     });
 
@@ -421,21 +515,23 @@ async function generateResponse(userMessage, context, messageHistory) {
 async function generateResponseWithGROQ(userMessage, contextString, conversationHistory, citations) {
   const axios = require('axios');
   
-  // Enhanced prompt with better context handling
-  const systemPrompt = `You are a precise study assistant. Answer questions based ONLY on the provided PDF content. 
-  
-Rules:
-1. If the answer is in the context, provide it with citations
-2. If the answer is NOT in the context, say "I don't find this information in the provided PDF content"
-3. Be accurate and cite sources when possible
-4. Keep answers concise but informative`;
+  // Enhanced prompt with proper citation formatting
+  const systemPrompt = `You are a precise study assistant. Answer questions based ONLY on the provided PDF content.
+
+CITATION RULES:
+1. Always cite sources using the format: "According to Source X (Page Y): 'exact quote from the source'"
+2. Include 2-3 line quotes when citing specific information
+3. If the answer is NOT in the context, say "I don't find this information in the provided PDF content"
+4. Be accurate and always provide page numbers
+5. Keep answers informative but concise
+6. Use inline citations within your response, not just at the end`;
 
   const userPrompt = `PDF Content:
 ${contextString}
 
 Question: ${userMessage}
 
-Answer based on the PDF content above. If the information is not available in the content, clearly state that.`;
+Answer based on the PDF content above. Use proper citations like "According to Source 1 (Page 5): 'exact quote here'." If the information is not available in the content, clearly state that.`;
 
   try {
     console.log('Sending to GROQ with context length:', contextString.length);
