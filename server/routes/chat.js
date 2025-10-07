@@ -18,9 +18,9 @@ async function listAvailableGeminiModels(apiKey) {
       { method: 'GET' }
     );
     const data = await response.json();
-    return (data.models || [])
-      .filter(model => (model.supportedGenerationMethods || []).includes('generateContent'))
-      .map(model => (model.name || '').split('/').pop());
+    return data.models
+      .filter(model => model.supportedGenerationMethods.includes('generateContent'))
+      .map(model => model.name);
   } catch (error) {
     console.error('Error fetching available Gemini models:', error.message);
     return [];
@@ -86,7 +86,7 @@ router.get('/:id', authenticateToken, async (req, res) => {
 // Send message
 router.post('/:id/messages', authenticateToken, async (req, res) => {
   try {
-    const { content, pdfContext: overridePdfContext } = req.body;
+    const { content } = req.body;
     
     if (!content || content.trim().length === 0) {
       return res.status(400).json({ error: 'Message content is required' });
@@ -109,11 +109,8 @@ router.post('/:id/messages', authenticateToken, async (req, res) => {
       timestamp: new Date()
     });
 
-    // Get relevant context from PDFs (allow override from client)
-    const activePdfContext = Array.isArray(overridePdfContext) && overridePdfContext.length > 0
-      ? overridePdfContext
-      : chat.pdfContext;
-    const context = await getRelevantContext(content, activePdfContext);
+    // Get relevant context from PDFs
+    const context = await getRelevantContext(content, chat.pdfContext);
     
     // Generate response using LLM
     const response = await generateResponse(content, context, chat.messages);
