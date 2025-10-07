@@ -278,7 +278,9 @@ async function getRelevantContext(query, pdfIds) {
 
           if (score > 0.1) { // Lower threshold to catch more relevant content
             relevantChunks.push({
-              ...chunk,
+              text: chunk.text,
+              pageNumber: chunk.pageNumber,
+              chunkIndex: chunk.chunkIndex,
               pdfId: pdf._id,
               relevanceScore: score,
               keywordScore: keywordScore,
@@ -400,17 +402,19 @@ async function generateResponse(userMessage, context, messageHistory) {
     const citations = [];
 
     context.forEach((chunk, index) => {
-      const sourceLabel = `Source ${index + 1} (Page ${chunk.pageNumber})`;
-      contextString += `${sourceLabel}:\n${chunk.text}\n\n`;
+      const pageNumber = typeof chunk.pageNumber === 'number' ? chunk.pageNumber : 1;
+      const sourceLabel = `Source ${index + 1} (Page ${pageNumber})`;
+      const chunkText = chunk.text || '';
+      contextString += `${sourceLabel}:\n${chunkText}\n\n`;
       
       // Create citation with proper format
       citations.push({
         pdfId: chunk.pdfId,
-        pageNumber: chunk.pageNumber,
-        snippet: chunk.text.substring(0, 200) + '...',
-        relevanceScore: chunk.relevanceScore,
+        pageNumber: pageNumber,
+        snippet: chunkText.substring(0, 200) + (chunkText.length > 200 ? '...' : ''),
+        relevanceScore: chunk.relevanceScore || 0,
         sourceLabel: sourceLabel,
-        fullText: chunk.text
+        fullText: chunkText
       });
     });
 

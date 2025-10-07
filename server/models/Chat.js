@@ -15,9 +15,17 @@ const messageSchema = new mongoose.Schema({
       type: mongoose.Schema.Types.ObjectId,
       ref: 'PDF'
     },
-    pageNumber: Number,
+    pageNumber: {
+      type: Number,
+      default: 1
+    },
     snippet: String,
-    relevanceScore: Number
+    relevanceScore: {
+      type: Number,
+      default: 0
+    },
+    sourceLabel: String,
+    fullText: String
   }],
   timestamp: {
     type: Date,
