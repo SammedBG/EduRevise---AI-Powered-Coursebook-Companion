@@ -1,0 +1,50 @@
+# Render.com deployment configuration for Study Buddy
+services:
+  # Backend API Service
+  - type: web
+    name: study-buddy-api
+    env: node
+    plan: starter
+    buildCommand: cd server && npm install
+    startCommand: cd server && npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: MONGODB_URI
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: GROQ_API_KEY
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: HF_API_TOKEN
+        sync: false
+      - key: YOUTUBE_API_KEY
+        sync: false
+      - key: CORS_ORIGIN
+        value: https://study-buddy-frontend.onrender.com
+    healthCheckPath: /api/health
+    autoDeploy: true
+
+  # Frontend Static Site
+  - type: web
+    name: study-buddy-frontend
+    env: static
+    buildCommand: cd client && npm install && npm run build
+    staticPublishPath: ./client/build
+    envVars:
+      - key: REACT_APP_API_URL
+        value: https://study-buddy-api.onrender.com/api
+    autoDeploy: true
+
+# Database (if using Render's MongoDB)
+databases:
+  - name: study-buddy-db
+    databaseName: study-buddy
+    user: studybuddy
+    plan: starter
