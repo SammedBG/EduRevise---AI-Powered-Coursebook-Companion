@@ -153,7 +153,7 @@ Study Buddy transforms static PDF study materials into an interactive learning e
 
 ### 1. Clone the Repository
 ```bash
-git clone https://github.com/yourusername/study-buddy.git
+git clone https://github.com/SammedBG/EduRevise---AI-Powered-Coursebook-Companion.git
 cd study-buddy
 ```
 
