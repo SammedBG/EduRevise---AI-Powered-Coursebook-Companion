@@ -95,7 +95,10 @@ router.get('/dashboard', authenticateToken, async (req, res) => {
     });
   } catch (error) {
     console.error('Get dashboard error:', error);
-    res.status(500).json({ error: 'Failed to fetch dashboard data' });
+    res.status(500).json({ 
+      error: 'Failed to fetch dashboard data',
+      code: 'DASHBOARD_FETCH_FAILED'
+    });
   }
 });
 
@@ -104,13 +107,30 @@ router.get('/subject/:subject', authenticateToken, async (req, res) => {
   try {
     const { subject } = req.params;
     
+    if (!subject || subject.trim().length === 0) {
+      return res.status(400).json({ 
+        error: 'Subject parameter is required',
+        code: 'MISSING_SUBJECT'
+      });
+    }
+
+    if (subject.length > 50) {
+      return res.status(400).json({ 
+        error: 'Subject name too long (max 50 characters)',
+        code: 'SUBJECT_TOO_LONG'
+      });
+    }
+    
     const progress = await Progress.find({ 
       userId: req.userId,
       subject: new RegExp(subject, 'i')
     }).populate('pdfId', 'originalName metadata');
 
     if (progress.length === 0) {
-      return res.status(404).json({ error: 'No progress found for this subject' });
+      return res.status(404).json({ 
+        error: 'No progress found for this subject',
+        code: 'SUBJECT_NOT_FOUND'
+      });
     }
 
     // Calculate subject-specific stats
@@ -142,22 +162,31 @@ router.get('/subject/:subject', authenticateToken, async (req, res) => {
     });
   } catch (error) {
     console.error('Get subject progress error:', error);
-    res.status(500).json({ error: 'Failed to fetch subject progress' });
+    res.status(500).json({ 
+      error: 'Failed to fetch subject progress',
+      code: 'SUBJECT_PROGRESS_FETCH_FAILED'
+    });
   }
 });
 
 // Get progress for specific topic
 router.get('/topic/:topicId', authenticateToken, async (req, res) => {
   try {
-    const progress = await Progress.findById(req.params.topicId)
+    const { topicId } = req.params;
+    
+    if (!topicId || !topicId.match(/^[0-9a-fA-F]{24}$/)) {
+      return res.status(400).json({ error: 'Invalid topic ID', code: 'INVALID_TOPIC_ID' });
+    }
+
+    const progress = await Progress.findById(topicId)
       .populate('pdfId', 'originalName metadata');
 
     if (!progress) {
-      return res.status(404).json({ error: 'Topic progress not found' });
+      return res.status(404).json({ error: 'Topic progress not found', code: 'TOPIC_NOT_FOUND' });
     }
 
     if (progress.userId.toString() !== req.userId) {
-      return res.status(403).json({ error: 'Access denied' });
+      return res.status(403).json({ error: 'Access denied', code: 'FORBIDDEN' });
     }
 
     // Get quiz attempts for this topic
@@ -177,7 +206,7 @@ router.get('/topic/:topicId', authenticateToken, async (req, res) => {
     });
   } catch (error) {
     console.error('Get topic progress error:', error);
-    res.status(500).json({ error: 'Failed to fetch topic progress' });
+    res.status(500).json({ error: 'Failed to fetch topic progress', code: 'TOPIC_PROGRESS_FETCH_FAILED' });
   }
 });
 
@@ -258,7 +287,10 @@ router.get('/recommendations', authenticateToken, async (req, res) => {
     res.json({ recommendations: recommendations.slice(0, 10) });
   } catch (error) {
     console.error('Get recommendations error:', error);
-    res.status(500).json({ error: 'Failed to fetch recommendations' });
+    res.status(500).json({ 
+      error: 'Failed to fetch recommendations', 
+      code: 'RECOMMENDATIONS_FETCH_FAILED' 
+    });
   }
 });
 
@@ -266,6 +298,14 @@ router.get('/recommendations', authenticateToken, async (req, res) => {
 router.get('/analytics', authenticateToken, async (req, res) => {
   try {
     const { period = '30d' } = req.query;
+    
+    // Validate period parameter
+    if (!['7d', '30d', '90d'].includes(period)) {
+      return res.status(400).json({ 
+        error: 'Invalid period. Must be 7d, 30d, or 90d', 
+        code: 'INVALID_PERIOD' 
+      });
+    }
     
     // Calculate date range
     const now = new Date();
@@ -335,7 +375,10 @@ router.get('/analytics', authenticateToken, async (req, res) => {
     });
   } catch (error) {
     console.error('Get analytics error:', error);
-    res.status(500).json({ error: 'Failed to fetch analytics' });
+    res.status(500).json({ 
+      error: 'Failed to fetch analytics', 
+      code: 'ANALYTICS_FETCH_FAILED' 
+    });
   }
 });
 
