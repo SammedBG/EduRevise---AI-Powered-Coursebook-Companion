@@ -62,19 +62,49 @@ function parsePdfDate(input) {
 
 // Upload PDF
 router.post('/upload', authenticateToken, upload.single('pdf'), async (req, res) => {
+  let filePath = null;
+  
   try {
-    if (!req.file) {
-      return res.status(400).json({ error: 'No PDF file uploaded' });
+    // Handle multer errors
+    if (req.file === undefined) {
+      return res.status(400).json({ 
+        error: 'No PDF file uploaded',
+        code: 'NO_FILE_UPLOADED'
+      });
     }
+
+    filePath = req.file.path;
 
     // Check file size before processing
     if (req.file.size > 10 * 1024 * 1024) { // 10MB limit
-      await fs.unlink(req.file.path); // Clean up file
-      return res.status(400).json({ error: 'PDF file too large. Maximum size is 10MB.' });
+      await fs.unlink(filePath); // Clean up file
+      return res.status(413).json({ 
+        error: 'PDF file too large. Maximum size is 10MB.',
+        code: 'FILE_TOO_LARGE'
+      });
+    }
+
+    // Check if file is empty
+    if (req.file.size === 0) {
+      await fs.unlink(filePath);
+      return res.status(400).json({ 
+        error: 'Uploaded file is empty',
+        code: 'EMPTY_FILE'
+      });
     }
     
     // Read and parse PDF with memory management
-    const pdfBuffer = await fs.readFile(req.file.path);
+    let pdfBuffer;
+    try {
+      pdfBuffer = await fs.readFile(filePath);
+    } catch (readError) {
+      console.error('Error reading uploaded file:', readError);
+      await fs.unlink(filePath);
+      return res.status(500).json({ 
+        error: 'Failed to read uploaded file',
+        code: 'FILE_READ_ERROR'
+      });
+    }
     
     try {
       const pdfData = await pdfParse(pdfBuffer, {
@@ -82,11 +112,21 @@ router.post('/upload', authenticateToken, upload.single('pdf'), async (req, res)
         version: 'v1.10.100' // Use specific version for stability
       });
       
+      // Validate PDF data
+      if (!pdfData || typeof pdfData !== 'object') {
+        await fs.unlink(filePath);
+        return res.status(400).json({ 
+          error: 'Invalid PDF file format',
+          code: 'INVALID_PDF_FORMAT'
+        });
+      }
+      
       // Check if we got meaningful content
       if (!pdfData.text || pdfData.text.trim().length < 50) {
-        await fs.unlink(req.file.path); // Clean up file
+        await fs.unlink(filePath);
         return res.status(400).json({ 
-          error: 'PDF contains no extractable text. Please ensure the PDF has selectable text (not scanned images).' 
+          error: 'PDF contains no extractable text. Please ensure the PDF has selectable text (not scanned images).',
+          code: 'NO_EXTRACTABLE_TEXT'
         });
       }
       
@@ -178,43 +218,56 @@ router.get('/', authenticateToken, async (req, res) => {
     res.json({ pdfs });
   } catch (error) {
     console.error('Get PDFs error:', error);
-    res.status(500).json({ error: 'Failed to fetch PDFs' });
+    res.status(500).json({ 
+      error: 'Failed to fetch PDFs',
+      code: 'PDFS_FETCH_FAILED'
+    });
   }
 });
 
 // Get specific PDF
 router.get('/:id', authenticateToken, async (req, res) => {
   try {
-    const pdf = await PDF.findById(req.params.id);
+    const { id } = req.params;
+    if (!id || !id.match(/^[0-9a-fA-F]{24}$/)) {
+      return res.status(400).json({ error: 'Invalid PDF ID', code: 'INVALID_PDF_ID' });
+    }
+
+    const pdf = await PDF.findById(id);
     
     if (!pdf) {
-      return res.status(404).json({ error: 'PDF not found' });
+      return res.status(404).json({ error: 'PDF not found', code: 'PDF_NOT_FOUND' });
     }
 
     // Check if user has access
     if (pdf.uploadedBy.toString() !== req.userId && !pdf.isPublic) {
-      return res.status(403).json({ error: 'Access denied' });
+      return res.status(403).json({ error: 'Access denied', code: 'FORBIDDEN' });
     }
 
     res.json({ pdf });
   } catch (error) {
     console.error('Get PDF error:', error);
-    res.status(500).json({ error: 'Failed to fetch PDF' });
+    res.status(500).json({ error: 'Failed to fetch PDF', code: 'PDF_FETCH_FAILED' });
   }
 });
 
 // Delete PDF
 router.delete('/:id', authenticateToken, async (req, res) => {
   try {
-    const pdf = await PDF.findById(req.params.id);
+    const { id } = req.params;
+    if (!id || !id.match(/^[0-9a-fA-F]{24}$/)) {
+      return res.status(400).json({ error: 'Invalid PDF ID', code: 'INVALID_PDF_ID' });
+    }
+
+    const pdf = await PDF.findById(id);
     
     if (!pdf) {
-      return res.status(404).json({ error: 'PDF not found' });
+      return res.status(404).json({ error: 'PDF not found', code: 'PDF_NOT_FOUND' });
     }
 
     // Check if user owns the PDF
     if (pdf.uploadedBy.toString() !== req.userId && !pdf.isPublic) {
-      return res.status(403).json({ error: 'Access denied' });
+      return res.status(403).json({ error: 'Access denied', code: 'FORBIDDEN' });
     }
 
     // Delete file from filesystem
@@ -224,19 +277,33 @@ router.delete('/:id', authenticateToken, async (req, res) => {
       console.log('File already deleted or not found');
     }
 
-    await PDF.findByIdAndDelete(req.params.id);
+    await PDF.findByIdAndDelete(id);
 
     res.json({ message: 'PDF deleted successfully' });
   } catch (error) {
     console.error('Delete PDF error:', error);
-    res.status(500).json({ error: 'Failed to delete PDF' });
+    res.status(500).json({ error: 'Failed to delete PDF', code: 'PDF_DELETE_FAILED' });
   }
 });
 
 // Search PDFs
 router.get('/search/:query', authenticateToken, async (req, res) => {
   try {
-    const query = req.params.query;
+    const { query } = req.params;
+    
+    if (!query || query.trim().length === 0) {
+      return res.status(400).json({ 
+        error: 'Search query is required',
+        code: 'MISSING_SEARCH_QUERY'
+      });
+    }
+
+    if (query.length > 100) {
+      return res.status(400).json({ 
+        error: 'Search query too long (max 100 characters)',
+        code: 'SEARCH_QUERY_TOO_LONG'
+      });
+    }
     
     const pdfs = await PDF.find({
       $and: [
@@ -259,21 +326,26 @@ router.get('/search/:query', authenticateToken, async (req, res) => {
     res.json({ pdfs });
   } catch (error) {
     console.error('Search PDFs error:', error);
-    res.status(500).json({ error: 'Failed to search PDFs' });
+    res.status(500).json({ error: 'Failed to search PDFs', code: 'PDF_SEARCH_FAILED' });
   }
 });
 
 // Process PDF for RAG (chunking and embedding)
 router.post('/:id/process', authenticateToken, async (req, res) => {
   try {
-    const pdf = await PDF.findById(req.params.id);
+    const { id } = req.params;
+    if (!id || !id.match(/^[0-9a-fA-F]{24}$/)) {
+      return res.status(400).json({ error: 'Invalid PDF ID', code: 'INVALID_PDF_ID' });
+    }
+
+    const pdf = await PDF.findById(id);
     
     if (!pdf) {
-      return res.status(404).json({ error: 'PDF not found' });
+      return res.status(404).json({ error: 'PDF not found', code: 'PDF_NOT_FOUND' });
     }
 
     if (pdf.uploadedBy.toString() !== req.userId) {
-      return res.status(403).json({ error: 'Access denied' });
+      return res.status(403).json({ error: 'Access denied', code: 'FORBIDDEN' });
     }
 
     if (pdf.content.processed) {
@@ -298,7 +370,8 @@ router.post('/:id/process', authenticateToken, async (req, res) => {
       } catch (ocrError) {
         console.error('Processing failed:', ocrError);
         return res.status(400).json({ 
-          error: 'This PDF has little or no extractable text. Please ensure the PDF contains readable text (not scanned images).' 
+          error: 'This PDF has little or no extractable text. Please ensure the PDF contains readable text (not scanned images).',
+          code: 'INSUFFICIENT_TEXT_EXTRACTION'
         });
       }
     } else {
@@ -307,14 +380,15 @@ router.post('/:id/process', authenticateToken, async (req, res) => {
 
     if (!extractedText || extractedText.trim().length < 50) {
       return res.status(400).json({ 
-        error: 'Unable to extract sufficient text from PDF. Please ensure the PDF contains readable text.' 
+        error: 'Unable to extract sufficient text from PDF. Please ensure the PDF contains readable text.',
+        code: 'INSUFFICIENT_TEXT_CONTENT'
       });
     }
 
     // Enhanced chunking with better text processing
     const chunks = createTextChunks(extractedText, pdf._id);
 
-    // Generate embeddings for each chunk
+    // Generate embeddings for each chunk with timeout guard
     console.log(`Generating embeddings for ${chunks.length} chunks...`);
     const chunksWithEmbeddings = [];
     
@@ -323,12 +397,15 @@ router.post('/:id/process', authenticateToken, async (req, res) => {
       console.log(`Processing chunk ${i + 1}/${chunks.length}`);
       
       try {
-        // Generate embedding for this chunk
-        const embedding = await generateEmbedding(chunk.text);
+        // Generate embedding for this chunk with timeout
+        const embedding = await Promise.race([
+          generateEmbedding(chunk.text),
+          new Promise((_, reject) => setTimeout(() => reject(new Error('EMBEDDING_TIMEOUT')), 10000))
+        ]);
         
         chunksWithEmbeddings.push({
           ...chunk,
-          embedding: embedding.length > 0 ? embedding : undefined
+          embedding: embedding && embedding.length > 0 ? embedding : undefined
         });
         
         // Add small delay to avoid rate limiting
@@ -337,6 +414,11 @@ router.post('/:id/process', authenticateToken, async (req, res) => {
         }
       } catch (error) {
         console.error(`Failed to generate embedding for chunk ${i + 1}:`, error);
+        if (error.message === 'EMBEDDING_TIMEOUT') {
+          console.warn(`Embedding timeout for chunk ${i + 1}, skipping...`);
+          // Continue with remaining chunks
+          continue;
+        }
         // Still include the chunk without embedding
         chunksWithEmbeddings.push({
           ...chunk,
@@ -360,11 +442,22 @@ router.post('/:id/process', authenticateToken, async (req, res) => {
       chunksCount: chunks.length,
       processingMethod: processingMethod,
       totalTextLength: extractedText.length,
-      averageChunkSize: Math.round(extractedText.length / chunks.length)
+      averageChunkSize: Math.round(extractedText.length / chunks.length),
+      hasEmbeddings: pdf.content.hasEmbeddings
     });
   } catch (error) {
     console.error('Process PDF error:', error);
-    res.status(500).json({ error: 'Failed to process PDF' });
+    if (error.message === 'EMBEDDING_TIMEOUT') {
+      res.status(504).json({ 
+        error: 'PDF processing timeout, please try again', 
+        code: 'PDF_PROCESSING_TIMEOUT' 
+      });
+    } else {
+      res.status(500).json({ 
+        error: 'Failed to process PDF', 
+        code: 'PDF_PROCESSING_FAILED' 
+      });
+    }
   }
 });
 

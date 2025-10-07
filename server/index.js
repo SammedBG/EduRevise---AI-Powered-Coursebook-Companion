@@ -61,16 +61,61 @@ app.get('/api/health', (req, res) => {
 
 // Error handling middleware
 app.use((err, req, res, next) => {
-  console.error(err.stack);
+  console.error('Global error handler:', err.stack);
+  
+  // Handle specific error types
+  if (err.name === 'ValidationError') {
+    return res.status(400).json({ 
+      error: 'Validation failed', 
+      code: 'VALIDATION_ERROR',
+      details: err.message 
+    });
+  }
+  
+  if (err.name === 'CastError') {
+    return res.status(400).json({ 
+      error: 'Invalid ID format', 
+      code: 'INVALID_ID_FORMAT' 
+    });
+  }
+  
+  if (err.name === 'MongoServerError' && err.code === 11000) {
+    return res.status(409).json({ 
+      error: 'Duplicate entry', 
+      code: 'DUPLICATE_ENTRY' 
+    });
+  }
+  
+  if (err.name === 'MulterError') {
+    if (err.code === 'LIMIT_FILE_SIZE') {
+      return res.status(413).json({ 
+        error: 'File too large', 
+        code: 'FILE_TOO_LARGE' 
+      });
+    }
+    if (err.code === 'LIMIT_UNEXPECTED_FILE') {
+      return res.status(400).json({ 
+        error: 'Unexpected file field', 
+        code: 'UNEXPECTED_FILE_FIELD' 
+      });
+    }
+  }
+  
+  // Default error response
   res.status(500).json({ 
-    error: 'Something went wrong!',
-    message: process.env.NODE_ENV === 'development' ? err.message : 'Internal server error'
+    error: 'Internal server error',
+    code: 'INTERNAL_SERVER_ERROR',
+    message: process.env.NODE_ENV === 'development' ? err.message : 'Something went wrong!'
   });
 });
 
 // 404 handler
 app.use('*', (req, res) => {
-  res.status(404).json({ error: 'Route not found' });
+  res.status(404).json({ 
+    error: 'Route not found', 
+    code: 'ROUTE_NOT_FOUND',
+    path: req.originalUrl 
+  });
 });
 
 const PORT = process.env.PORT || 5000;

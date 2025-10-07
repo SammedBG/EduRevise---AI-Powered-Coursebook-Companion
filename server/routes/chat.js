@@ -39,14 +39,24 @@ router.get('/', authenticateToken, async (req, res) => {
     res.json({ chats });
   } catch (error) {
     console.error('Get chats error:', error);
-    res.status(500).json({ error: 'Failed to fetch chats' });
+    res.status(500).json({ 
+      error: 'Failed to fetch chats',
+      code: 'CHATS_FETCH_FAILED'
+    });
   }
 });
 
 // Create new chat
 router.post('/', authenticateToken, async (req, res) => {
   try {
-    const { title, pdfContext } = req.body;
+    const { title, pdfContext } = req.body || {};
+
+    if (pdfContext && !Array.isArray(pdfContext)) {
+      return res.status(400).json({ 
+        error: 'pdfContext must be an array of PDF IDs',
+        code: 'INVALID_PDF_CONTEXT'
+      });
+    }
 
     const chat = new Chat({
       userId: req.userId,
@@ -60,47 +70,65 @@ router.post('/', authenticateToken, async (req, res) => {
     res.status(201).json({ chat });
   } catch (error) {
     console.error('Create chat error:', error);
-    res.status(500).json({ error: 'Failed to create chat' });
+    res.status(500).json({ 
+      error: 'Failed to create chat',
+      code: 'CHAT_CREATE_FAILED'
+    });
   }
 });
 
 // Get specific chat
 router.get('/:id', authenticateToken, async (req, res) => {
   try {
-    const chat = await Chat.findById(req.params.id);
+    const { id } = req.params;
+    if (!id || !id.match(/^[0-9a-fA-F]{24}$/)) {
+      return res.status(400).json({ error: 'Invalid chat ID', code: 'INVALID_CHAT_ID' });
+    }
+
+    const chat = await Chat.findById(id);
     
     if (!chat) {
-      return res.status(404).json({ error: 'Chat not found' });
+      return res.status(404).json({ error: 'Chat not found', code: 'CHAT_NOT_FOUND' });
     }
 
     if (chat.userId.toString() !== req.userId) {
-      return res.status(403).json({ error: 'Access denied' });
+      return res.status(403).json({ error: 'Access denied', code: 'FORBIDDEN' });
     }
 
     res.json({ chat });
   } catch (error) {
     console.error('Get chat error:', error);
-    res.status(500).json({ error: 'Failed to fetch chat' });
+    res.status(500).json({ error: 'Failed to fetch chat', code: 'CHAT_FETCH_FAILED' });
   }
 });
 
 // Send message
 router.post('/:id/messages', authenticateToken, async (req, res) => {
   try {
-    const { content, pdfContext } = req.body;
+    const { content, pdfContext } = req.body || {};
+    const { id } = req.params;
+
+    if (!id || !id.match(/^[0-9a-fA-F]{24}$/)) {
+      return res.status(400).json({ error: 'Invalid chat ID', code: 'INVALID_CHAT_ID' });
+    }
     
     if (!content || content.trim().length === 0) {
-      return res.status(400).json({ error: 'Message content is required' });
+      return res.status(400).json({ error: 'Message content is required', code: 'MISSING_MESSAGE' });
     }
 
-    const chat = await Chat.findById(req.params.id);
+    const chat = await Chat.findById(id);
     
     if (!chat) {
-      return res.status(404).json({ error: 'Chat not found' });
+      return res.status(404).json({ error: 'Chat not found', code: 'CHAT_NOT_FOUND' });
     }
 
     if (chat.userId.toString() !== req.userId) {
-      return res.status(403).json({ error: 'Access denied' });
+      return res.status(403).json({ error: 'Access denied', code: 'FORBIDDEN' });
+    }
+
+    // Validate pdfContext if provided
+    if (pdfContext && !Array.isArray(pdfContext)) {
+      return res.status(400).json({ error: 'pdfContext must be an array of PDF IDs', code: 'INVALID_PDF_CONTEXT' });
     }
 
     // Add user message
@@ -113,10 +141,34 @@ router.post('/:id/messages', authenticateToken, async (req, res) => {
     // Get relevant context from PDFs (use pdfContext from request, fallback to chat.pdfContext)
     const selectedPdfs = pdfContext && pdfContext.length > 0 ? pdfContext : chat.pdfContext;
     console.log('Getting context for PDFs:', selectedPdfs);
-    const context = await getRelevantContext(content, selectedPdfs);
+    let context = [];
+    try {
+      context = await getRelevantContext(content, selectedPdfs);
+    } catch (ctxErr) {
+      console.error('Context retrieval error:', ctxErr);
+      context = [];
+    }
+
+    if ((!selectedPdfs || selectedPdfs.length === 0) && context.length === 0) {
+      console.warn('No PDFs selected or context available');
+      // continue but inform client in response metadata
+    }
     
     // Generate response using LLM
-    const response = await generateResponse(content, context, chat.messages);
+    let response;
+    try {
+      // Guard long LLM latency with a timeout wrapper
+      response = await Promise.race([
+        generateResponse(content, context, chat.messages),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('LLM_TIMEOUT')), 20000))
+      ]);
+    } catch (genErr) {
+      console.error('LLM generation error:', genErr?.message || genErr);
+      if (genErr && genErr.message === 'LLM_TIMEOUT') {
+        return res.status(504).json({ error: 'AI service timeout, please try again', code: 'LLM_TIMEOUT' });
+      }
+      return res.status(502).json({ error: 'AI generation failed', code: 'LLM_GENERATION_FAILED' });
+    }
 
     // Add assistant message with citations
     chat.messages.push({
@@ -160,29 +212,34 @@ router.post('/:id/messages', authenticateToken, async (req, res) => {
     });
   } catch (error) {
     console.error('Send message error:', error);
-    res.status(500).json({ error: 'Failed to send message' });
+    res.status(500).json({ error: 'Failed to send message', code: 'SEND_MESSAGE_FAILED' });
   }
 });
 
 // Delete chat
 router.delete('/:id', authenticateToken, async (req, res) => {
   try {
-    const chat = await Chat.findById(req.params.id);
+    const { id } = req.params;
+    if (!id || !id.match(/^[0-9a-fA-F]{24}$/)) {
+      return res.status(400).json({ error: 'Invalid chat ID', code: 'INVALID_CHAT_ID' });
+    }
+
+    const chat = await Chat.findById(id);
     
     if (!chat) {
-      return res.status(404).json({ error: 'Chat not found' });
+      return res.status(404).json({ error: 'Chat not found', code: 'CHAT_NOT_FOUND' });
     }
 
     if (chat.userId.toString() !== req.userId) {
-      return res.status(403).json({ error: 'Access denied' });
+      return res.status(403).json({ error: 'Access denied', code: 'FORBIDDEN' });
     }
 
-    await Chat.findByIdAndDelete(req.params.id);
+    await Chat.findByIdAndDelete(id);
 
     res.json({ message: 'Chat deleted successfully' });
   } catch (error) {
     console.error('Delete chat error:', error);
-    res.status(500).json({ error: 'Failed to delete chat' });
+    res.status(500).json({ error: 'Failed to delete chat', code: 'CHAT_DELETE_FAILED' });
   }
 });
 

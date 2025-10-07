@@ -97,7 +97,7 @@ const Login = () => {
           
           <div className="mt-8 p-4 bg-white/10 rounded-xl">
             <p className="text-purple-100 text-sm">
-              <strong>Join thousands of students</strong> who are already using Study Buddy to excel in their studies!
+              <strong>Join Now</strong> and Transform Your Learning Experience !
             </p>
           </div>
         </div>
@@ -222,13 +222,7 @@ const Login = () => {
           </div>
 
           {/* Demo Credentials */}
-          <div className="mt-6 p-4 bg-gradient-to-r from-purple-50 to-indigo-50 rounded-xl border border-purple-100">
-            <h3 className="text-sm font-semibold text-gray-900 mb-2">Demo Credentials:</h3>
-            <div className="text-xs text-gray-600 space-y-1">
-              <p><strong>Email:</strong> demo@studybuddy.com</p>
-              <p><strong>Password:</strong> demo123</p>
-            </div>
-          </div>
+        
         </div>
       </div>
     </div>

@@ -8,17 +8,47 @@ const router = express.Router();
 // Generate quiz from PDFs
 router.post('/generate', authenticateToken, async (req, res) => {
   try {
-    const { pdfIds, difficulty = 'mixed', questionTypes = ['mcq', 'saq', 'laq'], numQuestions = 10 } = req.body;
+    const { pdfIds, difficulty = 'mixed', questionTypes = ['mcq', 'saq', 'laq'], numQuestions = 10 } = req.body || {};
 
-    if (!pdfIds || pdfIds.length === 0) {
-      return res.status(400).json({ error: 'At least one PDF must be selected' });
+    // Input validation
+    if (!pdfIds || !Array.isArray(pdfIds) || pdfIds.length === 0) {
+      return res.status(400).json({ 
+        error: 'At least one PDF must be selected',
+        code: 'MISSING_PDF_IDS'
+      });
+    }
+
+    if (!Array.isArray(questionTypes) || questionTypes.length === 0) {
+      return res.status(400).json({ 
+        error: 'At least one question type must be specified',
+        code: 'INVALID_QUESTION_TYPES'
+      });
+    }
+
+    if (typeof numQuestions !== 'number' || numQuestions < 1 || numQuestions > 50) {
+      return res.status(400).json({ 
+        error: 'Number of questions must be between 1 and 50',
+        code: 'INVALID_NUM_QUESTIONS'
+      });
+    }
+
+    // Validate PDF IDs format
+    const invalidIds = pdfIds.filter(id => !id || !id.match(/^[0-9a-fA-F]{24}$/));
+    if (invalidIds.length > 0) {
+      return res.status(400).json({ 
+        error: 'Invalid PDF ID format',
+        code: 'INVALID_PDF_ID_FORMAT'
+      });
     }
 
     // Get PDFs and their content (allow unprocessed PDFs too)
     const pdfs = await PDF.find({ _id: { $in: pdfIds } });
 
     if (pdfs.length === 0) {
-      return res.status(400).json({ error: 'No PDFs found for the provided ids' });
+      return res.status(404).json({ 
+        error: 'No PDFs found for the provided IDs',
+        code: 'PDFS_NOT_FOUND'
+      });
     }
 
     // Extract content for quiz generation
@@ -34,11 +64,40 @@ router.post('/generate', authenticateToken, async (req, res) => {
     });
 
     if (!allContent || allContent.trim().length < 50) {
-      return res.status(400).json({ error: 'Not enough text content in selected PDFs to generate a quiz. Please process PDFs first or upload PDFs with selectable text.' });
+      return res.status(400).json({ 
+        error: 'Not enough text content in selected PDFs to generate a quiz. Please process PDFs first or upload PDFs with selectable text.',
+        code: 'INSUFFICIENT_CONTENT'
+      });
     }
 
-    // Generate questions (mock implementation)
-    const questions = await generateQuestions(allContent, questionTypes, difficulty, numQuestions, pdfs);
+    // Generate questions with timeout guard
+    let questions;
+    try {
+      questions = await Promise.race([
+        generateQuestions(allContent, questionTypes, difficulty, numQuestions, pdfs),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('QUIZ_GENERATION_TIMEOUT')), 30000))
+      ]);
+    } catch (genError) {
+      console.error('Quiz generation error:', genError);
+      if (genError.message === 'QUIZ_GENERATION_TIMEOUT') {
+        return res.status(504).json({ 
+          error: 'Quiz generation timeout, please try again',
+          code: 'QUIZ_GENERATION_TIMEOUT'
+        });
+      }
+      return res.status(502).json({ 
+        error: 'Failed to generate quiz questions',
+        code: 'QUIZ_GENERATION_FAILED'
+      });
+    }
+
+    // Validate generated questions
+    if (!questions || !Array.isArray(questions) || questions.length === 0) {
+      return res.status(502).json({ 
+        error: 'No questions were generated',
+        code: 'NO_QUESTIONS_GENERATED'
+      });
+    }
 
     // Create quiz
     const quiz = new Quiz({
@@ -56,7 +115,10 @@ router.post('/generate', authenticateToken, async (req, res) => {
     res.status(201).json({ quiz });
   } catch (error) {
     console.error('Generate quiz error:', error);
-    res.status(500).json({ error: 'Failed to generate quiz' });
+    res.status(500).json({ 
+      error: 'Failed to generate quiz',
+      code: 'QUIZ_GENERATE_FAILED'
+    });
   }
 });
 
@@ -70,48 +132,85 @@ router.get('/', authenticateToken, async (req, res) => {
     res.json({ quizzes });
   } catch (error) {
     console.error('Get quizzes error:', error);
-    res.status(500).json({ error: 'Failed to fetch quizzes' });
+    res.status(500).json({ 
+      error: 'Failed to fetch quizzes',
+      code: 'QUIZZES_FETCH_FAILED'
+    });
   }
 });
 
 // Get specific quiz
 router.get('/:id', authenticateToken, async (req, res) => {
   try {
-    const quiz = await Quiz.findById(req.params.id)
+    const { id } = req.params;
+    if (!id || !id.match(/^[0-9a-fA-F]{24}$/)) {
+      return res.status(400).json({ error: 'Invalid quiz ID', code: 'INVALID_QUIZ_ID' });
+    }
+
+    const quiz = await Quiz.findById(id)
       .populate('pdfContext', 'originalName');
 
     if (!quiz) {
-      return res.status(404).json({ error: 'Quiz not found' });
+      return res.status(404).json({ error: 'Quiz not found', code: 'QUIZ_NOT_FOUND' });
     }
 
     if (quiz.createdBy.toString() !== req.userId) {
-      return res.status(403).json({ error: 'Access denied' });
+      return res.status(403).json({ error: 'Access denied', code: 'FORBIDDEN' });
     }
 
     res.json({ quiz });
   } catch (error) {
     console.error('Get quiz error:', error);
-    res.status(500).json({ error: 'Failed to fetch quiz' });
+    res.status(500).json({ error: 'Failed to fetch quiz', code: 'QUIZ_FETCH_FAILED' });
   }
 });
 
 // Submit quiz answers
 router.post('/:id/submit', authenticateToken, async (req, res) => {
   try {
-    const { answers, timeSpent } = req.body;
+    const { answers, timeSpent } = req.body || {};
+    const { id } = req.params;
 
-    const quiz = await Quiz.findById(req.params.id);
+    if (!id || !id.match(/^[0-9a-fA-F]{24}$/)) {
+      return res.status(400).json({ error: 'Invalid quiz ID', code: 'INVALID_QUIZ_ID' });
+    }
+
+    if (!answers || !Array.isArray(answers) || answers.length === 0) {
+      return res.status(400).json({ 
+        error: 'Answers are required and must be an array',
+        code: 'MISSING_ANSWERS'
+      });
+    }
+
+    const quiz = await Quiz.findById(id);
     
     if (!quiz) {
-      return res.status(404).json({ error: 'Quiz not found' });
+      return res.status(404).json({ error: 'Quiz not found', code: 'QUIZ_NOT_FOUND' });
     }
 
     if (quiz.createdBy.toString() !== req.userId) {
-      return res.status(403).json({ error: 'Access denied' });
+      return res.status(403).json({ error: 'Access denied', code: 'FORBIDDEN' });
+    }
+
+    // Validate answers match quiz questions
+    if (answers.length !== quiz.questions.length) {
+      return res.status(400).json({ 
+        error: `Expected ${quiz.questions.length} answers, got ${answers.length}`,
+        code: 'ANSWER_COUNT_MISMATCH'
+      });
     }
 
     // Score the answers with detailed results
-    const results = scoreQuizDetailed(quiz.questions, answers);
+    let results;
+    try {
+      results = scoreQuizDetailed(quiz.questions, answers);
+    } catch (scoreError) {
+      console.error('Quiz scoring error:', scoreError);
+      return res.status(500).json({ 
+        error: 'Failed to score quiz',
+        code: 'QUIZ_SCORING_FAILED'
+      });
+    }
     
     // Debug logging
     console.log('Results type check:', {
@@ -154,21 +253,26 @@ router.post('/:id/submit', authenticateToken, async (req, res) => {
     });
   } catch (error) {
     console.error('Submit quiz error:', error);
-    res.status(500).json({ error: 'Failed to submit quiz' });
+    res.status(500).json({ error: 'Failed to submit quiz', code: 'QUIZ_SUBMIT_FAILED' });
   }
 });
 
 // Get quiz results
 router.get('/:id/results', authenticateToken, async (req, res) => {
   try {
-    const quiz = await Quiz.findById(req.params.id);
+    const { id } = req.params;
+    if (!id || !id.match(/^[0-9a-fA-F]{24}$/)) {
+      return res.status(400).json({ error: 'Invalid quiz ID', code: 'INVALID_QUIZ_ID' });
+    }
+
+    const quiz = await Quiz.findById(id);
     
     if (!quiz) {
-      return res.status(404).json({ error: 'Quiz not found' });
+      return res.status(404).json({ error: 'Quiz not found', code: 'QUIZ_NOT_FOUND' });
     }
 
     if (quiz.createdBy.toString() !== req.userId) {
-      return res.status(403).json({ error: 'Access denied' });
+      return res.status(403).json({ error: 'Access denied', code: 'FORBIDDEN' });
     }
 
     // Get user's attempts for this quiz
@@ -179,28 +283,50 @@ router.get('/:id/results', authenticateToken, async (req, res) => {
     res.json({ attempts: userAttempts });
   } catch (error) {
     console.error('Get quiz results error:', error);
-    res.status(500).json({ error: 'Failed to fetch quiz results' });
+    res.status(500).json({ error: 'Failed to fetch quiz results', code: 'QUIZ_RESULTS_FETCH_FAILED' });
   }
 });
 
 // Generate new questions for existing quiz
 router.post('/:id/regenerate', authenticateToken, async (req, res) => {
   try {
-    const { difficulty = 'mixed', questionTypes = ['mcq', 'saq', 'laq'], numQuestions = 10 } = req.body;
+    const { difficulty = 'mixed', questionTypes = ['mcq', 'saq', 'laq'], numQuestions = 10 } = req.body || {};
+    const { id } = req.params;
     
-    const existingQuiz = await Quiz.findById(req.params.id);
+    if (!id || !id.match(/^[0-9a-fA-F]{24}$/)) {
+      return res.status(400).json({ error: 'Invalid quiz ID', code: 'INVALID_QUIZ_ID' });
+    }
+
+    if (!Array.isArray(questionTypes) || questionTypes.length === 0) {
+      return res.status(400).json({ 
+        error: 'At least one question type must be specified',
+        code: 'INVALID_QUESTION_TYPES'
+      });
+    }
+
+    if (typeof numQuestions !== 'number' || numQuestions < 1 || numQuestions > 50) {
+      return res.status(400).json({ 
+        error: 'Number of questions must be between 1 and 50',
+        code: 'INVALID_NUM_QUESTIONS'
+      });
+    }
+    
+    const existingQuiz = await Quiz.findById(id);
     if (!existingQuiz) {
-      return res.status(404).json({ error: 'Quiz not found' });
+      return res.status(404).json({ error: 'Quiz not found', code: 'QUIZ_NOT_FOUND' });
     }
     
     if (existingQuiz.createdBy.toString() !== req.userId) {
-      return res.status(403).json({ error: 'Access denied' });
+      return res.status(403).json({ error: 'Access denied', code: 'FORBIDDEN' });
     }
     
     // Get PDFs and their content
     const pdfs = await PDF.find({ _id: { $in: existingQuiz.pdfContext } });
     if (pdfs.length === 0) {
-      return res.status(400).json({ error: 'No PDFs found for this quiz' });
+      return res.status(404).json({ 
+        error: 'No PDFs found for this quiz', 
+        code: 'PDFS_NOT_FOUND' 
+      });
     }
     
     // Extract content
@@ -213,11 +339,40 @@ router.post('/:id/regenerate', authenticateToken, async (req, res) => {
     });
     
     if (!allContent || allContent.trim().length < 50) {
-      return res.status(400).json({ error: 'Not enough text content to generate new questions' });
+      return res.status(400).json({ 
+        error: 'Not enough text content to generate new questions', 
+        code: 'INSUFFICIENT_CONTENT' 
+      });
     }
     
-    // Generate new questions
-    const newQuestions = await generateQuestions(allContent, questionTypes, difficulty, numQuestions, pdfs);
+    // Generate new questions with timeout guard
+    let newQuestions;
+    try {
+      newQuestions = await Promise.race([
+        generateQuestions(allContent, questionTypes, difficulty, numQuestions, pdfs),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('QUIZ_REGENERATION_TIMEOUT')), 30000))
+      ]);
+    } catch (genError) {
+      console.error('Quiz regeneration error:', genError);
+      if (genError.message === 'QUIZ_REGENERATION_TIMEOUT') {
+        return res.status(504).json({ 
+          error: 'Quiz regeneration timeout, please try again', 
+          code: 'QUIZ_REGENERATION_TIMEOUT' 
+        });
+      }
+      return res.status(502).json({ 
+        error: 'Failed to regenerate quiz questions', 
+        code: 'QUIZ_REGENERATION_FAILED' 
+      });
+    }
+
+    // Validate generated questions
+    if (!newQuestions || !Array.isArray(newQuestions) || newQuestions.length === 0) {
+      return res.status(502).json({ 
+        error: 'No questions were generated', 
+        code: 'NO_QUESTIONS_GENERATED' 
+      });
+    }
     
     // Create new quiz with same PDF context
     const newQuiz = new Quiz({
@@ -235,29 +390,34 @@ router.post('/:id/regenerate', authenticateToken, async (req, res) => {
     res.status(201).json({ quiz: newQuiz });
   } catch (error) {
     console.error('Regenerate quiz error:', error);
-    res.status(500).json({ error: 'Failed to regenerate quiz' });
+    res.status(500).json({ error: 'Failed to regenerate quiz', code: 'QUIZ_REGENERATE_FAILED' });
   }
 });
 
 // Delete quiz
 router.delete('/:id', authenticateToken, async (req, res) => {
   try {
-    const quiz = await Quiz.findById(req.params.id);
+    const { id } = req.params;
+    if (!id || !id.match(/^[0-9a-fA-F]{24}$/)) {
+      return res.status(400).json({ error: 'Invalid quiz ID', code: 'INVALID_QUIZ_ID' });
+    }
+
+    const quiz = await Quiz.findById(id);
     
     if (!quiz) {
-      return res.status(404).json({ error: 'Quiz not found' });
+      return res.status(404).json({ error: 'Quiz not found', code: 'QUIZ_NOT_FOUND' });
     }
 
     if (quiz.createdBy.toString() !== req.userId) {
-      return res.status(403).json({ error: 'Access denied' });
+      return res.status(403).json({ error: 'Access denied', code: 'FORBIDDEN' });
     }
 
-    await Quiz.findByIdAndDelete(req.params.id);
+    await Quiz.findByIdAndDelete(id);
 
     res.json({ message: 'Quiz deleted successfully' });
   } catch (error) {
     console.error('Delete quiz error:', error);
-    res.status(500).json({ error: 'Failed to delete quiz' });
+    res.status(500).json({ error: 'Failed to delete quiz', code: 'QUIZ_DELETE_FAILED' });
   }
 });
 
