@@ -26,6 +26,14 @@ services:
         sync: false
       - key: YOUTUBE_API_KEY
         sync: false
+      - key: AWS_ACCESS_KEY_ID
+        sync: false
+      - key: AWS_SECRET_ACCESS_KEY
+        sync: false
+      - key: AWS_REGION
+        value: ap-south-1
+      - key: S3_BUCKET_NAME
+        value: verra-my-website-2025
       - key: CORS_ORIGIN
         value: https://study-buddy-frontend.onrender.com
     healthCheckPath: /api/health

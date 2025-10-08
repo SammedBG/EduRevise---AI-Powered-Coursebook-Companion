@@ -1,32 +1,49 @@
 const express = require('express');
 const multer = require('multer');
+const multerS3 = require('multer-s3');
 const path = require('path');
 const fs = require('fs').promises;
 const pdfParse = require('pdf-parse');
 const Tesseract = require('tesseract.js');
 const axios = require('axios');
+const { S3Client, GetObjectCommand, DeleteObjectCommand, PutObjectCommand } = require('@aws-sdk/client-s3');
+const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
 const PDF = require('../models/PDF');
 const { authenticateToken } = require('./auth');
+require('dotenv').config();
 const router = express.Router();
 
-// Configure multer for file uploads
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const uploadDir = 'uploads/pdfs';
-    fs.mkdir(uploadDir, { recursive: true }).then(() => {
-      cb(null, uploadDir);
-    }).catch(err => cb(err, null));
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
+// Configure AWS S3 Client v3
+const s3Client = new S3Client({
+  region: process.env.AWS_REGION || 'us-east-1',
+  credentials: {
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
   }
 });
 
+// Configure multer for S3 uploads
 const upload = multer({
-  storage: storage,
+  storage: multerS3({
+    s3: s3Client,
+    bucket: process.env.S3_BUCKET_NAME || 'study-buddy-pdfs',
+    acl: 'private',
+    contentType: multerS3.AUTO_CONTENT_TYPE,
+    key: function (req, file, cb) {
+      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+      const key = `pdfs/${req.userId}/${file.fieldname}-${uniqueSuffix}${path.extname(file.originalname)}`;
+      cb(null, key);
+    },
+    metadata: function (req, file, cb) {
+      cb(null, { 
+        fieldName: file.fieldname,
+        uploadedBy: req.userId,
+        originalName: file.originalname
+      });
+    }
+  }),
   limits: {
-    fileSize: 10 * 1024 * 1024 // 10MB limit (reduced from 50MB)
+    fileSize: 10 * 1024 * 1024 // 10MB limit
   },
   fileFilter: (req, file, cb) => {
     if (file.mimetype === 'application/pdf') {
@@ -36,6 +53,15 @@ const upload = multer({
     }
   }
 });
+
+// Helper: convert stream to buffer for AWS SDK v3
+async function streamToBuffer(stream) {
+  const chunks = [];
+  for await (const chunk of stream) {
+    chunks.push(chunk);
+  }
+  return Buffer.concat(chunks);
+}
 
 // Helper: parse PDF metadata date strings like "D:20250403140945Z"
 function parsePdfDate(input) {
@@ -62,8 +88,6 @@ function parsePdfDate(input) {
 
 // Upload PDF
 router.post('/upload', authenticateToken, upload.single('pdf'), async (req, res) => {
-  let filePath = null;
-  
   try {
     // Handle multer errors
     if (req.file === undefined) {
@@ -73,11 +97,17 @@ router.post('/upload', authenticateToken, upload.single('pdf'), async (req, res)
       });
     }
 
-    filePath = req.file.path;
-
     // Check file size before processing
     if (req.file.size > 10 * 1024 * 1024) { // 10MB limit
-      await fs.unlink(filePath); // Clean up file
+      // Delete from S3 if too large
+      try {
+        await s3Client.send(new DeleteObjectCommand({
+          Bucket: process.env.S3_BUCKET_NAME || 'study-buddy-pdfs',
+          Key: req.file.key
+        }));
+      } catch (deleteError) {
+        console.error('Error deleting oversized file from S3:', deleteError);
+      }
       return res.status(413).json({ 
         error: 'PDF file too large. Maximum size is 10MB.',
         code: 'FILE_TOO_LARGE'
@@ -86,20 +116,31 @@ router.post('/upload', authenticateToken, upload.single('pdf'), async (req, res)
 
     // Check if file is empty
     if (req.file.size === 0) {
-      await fs.unlink(filePath);
+      // Delete from S3 if empty
+      try {
+        await s3Client.send(new DeleteObjectCommand({
+          Bucket: process.env.S3_BUCKET_NAME || 'study-buddy-pdfs',
+          Key: req.file.key
+        }));
+      } catch (deleteError) {
+        console.error('Error deleting empty file from S3:', deleteError);
+      }
       return res.status(400).json({ 
         error: 'Uploaded file is empty',
         code: 'EMPTY_FILE'
       });
     }
     
-    // Read and parse PDF with memory management
+    // Download file from S3 for processing
     let pdfBuffer;
     try {
-      pdfBuffer = await fs.readFile(filePath);
+      const s3Object = await s3Client.send(new GetObjectCommand({
+        Bucket: process.env.S3_BUCKET_NAME || 'study-buddy-pdfs',
+        Key: req.file.key
+      }));
+      pdfBuffer = await streamToBuffer(s3Object.Body);
     } catch (readError) {
-      console.error('Error reading uploaded file:', readError);
-      await fs.unlink(filePath);
+      console.error('Error reading file from S3:', readError);
       return res.status(500).json({ 
         error: 'Failed to read uploaded file',
         code: 'FILE_READ_ERROR'
@@ -114,7 +155,15 @@ router.post('/upload', authenticateToken, upload.single('pdf'), async (req, res)
       
       // Validate PDF data
       if (!pdfData || typeof pdfData !== 'object') {
-        await fs.unlink(filePath);
+        // Delete from S3 if invalid
+        try {
+          await s3Client.send(new DeleteObjectCommand({
+            Bucket: process.env.S3_BUCKET_NAME || 'study-buddy-pdfs',
+            Key: req.file.key
+          }));
+        } catch (deleteError) {
+          console.error('Error deleting invalid file from S3:', deleteError);
+        }
         return res.status(400).json({ 
           error: 'Invalid PDF file format',
           code: 'INVALID_PDF_FORMAT'
@@ -123,7 +172,15 @@ router.post('/upload', authenticateToken, upload.single('pdf'), async (req, res)
       
       // Check if we got meaningful content
       if (!pdfData.text || pdfData.text.trim().length < 50) {
-        await fs.unlink(filePath);
+        // Delete from S3 if no text
+        try {
+          await s3Client.send(new DeleteObjectCommand({
+            Bucket: process.env.S3_BUCKET_NAME || 'study-buddy-pdfs',
+            Key: req.file.key
+          }));
+        } catch (deleteError) {
+          console.error('Error deleting file with no text from S3:', deleteError);
+        }
         return res.status(400).json({ 
           error: 'PDF contains no extractable text. Please ensure the PDF has selectable text (not scanned images).',
           code: 'NO_EXTRACTABLE_TEXT'
@@ -131,50 +188,61 @@ router.post('/upload', authenticateToken, upload.single('pdf'), async (req, res)
       }
       
       // Limit text size to prevent memory issues
-      const maxTextLength = 50000; // 50KB limit (reduced from 100KB)
+      const maxTextLength = 50000; // 50KB limit
       const processedText = pdfData.text.length > maxTextLength 
         ? pdfData.text.substring(0, maxTextLength) + '\n\n[Content truncated due to size]'
         : pdfData.text;
 
-    // Create PDF document
-    const pdf = new PDF({
-      filename: req.file.filename,
-      originalName: req.file.originalname,
-      path: req.file.path,
-      size: req.file.size,
-      uploadedBy: req.userId,
-      metadata: {
-        title: pdfData.info?.Title || req.file.originalname,
-        author: pdfData.info?.Author || 'Unknown',
-        subject: pdfData.info?.Subject || 'General',
-        pages: pdfData.numpages,
-        createdAt: parsePdfDate(pdfData.info?.CreationDate)
-      },
-      content: {
-        extractedText: processedText,
-        processed: false
-      }
-    });
+      // Create PDF document with S3 information
+      const pdf = new PDF({
+        filename: req.file.key, // S3 key as filename
+        originalName: req.file.originalname,
+        path: req.file.location, // S3 URL
+        s3Key: req.file.key, // Store S3 key for future reference
+        s3Bucket: req.file.bucket,
+        size: req.file.size,
+        uploadedBy: req.userId,
+        metadata: {
+          title: pdfData.info?.Title || req.file.originalname,
+          author: pdfData.info?.Author || 'Unknown',
+          subject: pdfData.info?.Subject || 'General',
+          pages: pdfData.numpages,
+          createdAt: parsePdfDate(pdfData.info?.CreationDate)
+        },
+        content: {
+          extractedText: processedText,
+          processed: false
+        }
+      });
 
-        await pdf.save();
+      await pdf.save();
 
-        res.status(201).json({
-          message: 'PDF uploaded successfully',
-          pdf: {
-            _id: pdf._id,
-            filename: pdf.filename,
-            originalName: pdf.originalName,
-            size: pdf.size,
-            metadata: pdf.metadata,
-            uploadDate: pdf.uploadDate
-          }
-        });
+      res.status(201).json({
+        message: 'PDF uploaded successfully',
+        pdf: {
+          _id: pdf._id,
+          filename: pdf.filename,
+          originalName: pdf.originalName,
+          size: pdf.size,
+          metadata: pdf.metadata,
+          uploadDate: pdf.uploadDate
+        }
+      });
         
-      } catch (parseError) {
+    } catch (parseError) {
       console.error('PDF parsing error:', parseError);
-      await fs.unlink(req.file.path); // Clean up file
+      // Delete from S3 if parsing fails
+      try {
+        await s3Client.send(new DeleteObjectCommand({
+          Bucket: process.env.S3_BUCKET_NAME || 'study-buddy-pdfs',
+          Key: req.file.key
+        }));
+      } catch (deleteError) {
+        console.error('Error deleting file after parse error from S3:', deleteError);
+      }
       return res.status(400).json({ 
-        error: 'Failed to parse PDF. Please ensure it\'s a valid PDF file with extractable text.' 
+        error: 'Failed to parse PDF. Please ensure it\'s a valid PDF file with extractable text.',
+        code: 'PDF_PARSE_ERROR'
       });
     } finally {
       // Clear buffer from memory
@@ -186,24 +254,45 @@ router.post('/upload', authenticateToken, upload.single('pdf'), async (req, res)
   } catch (error) {
     console.error('PDF upload error:', error);
     
-    // Clean up file on error
-    if (req.file && req.file.path) {
+    // Clean up S3 file on error
+    if (req.file && req.file.key) {
       try {
-        await fs.unlink(req.file.path);
+        await s3Client.send(new DeleteObjectCommand({
+          Bucket: process.env.S3_BUCKET_NAME || 'study-buddy-pdfs',
+          Key: req.file.key
+        }));
       } catch (cleanupError) {
-        console.error('File cleanup error:', cleanupError);
+        console.error('S3 cleanup error:', cleanupError);
       }
     }
     
     if (error.message.includes('heap') || error.message.includes('memory')) {
       return res.status(413).json({ 
-        error: 'PDF too large for processing. Please use a smaller file.' 
+        error: 'PDF too large for processing. Please use a smaller file.',
+        code: 'MEMORY_ERROR'
       });
     }
     
-    res.status(500).json({ error: 'Failed to upload PDF' });
+    res.status(500).json({ 
+      error: 'Failed to upload PDF',
+      code: 'UPLOAD_ERROR'
+    });
   }
 });
+
+// Helper function to generate signed URL for S3 access
+async function generateSignedUrl(s3Key, bucketName, expiresIn = 3600) {
+  try {
+    const command = new GetObjectCommand({
+      Bucket: bucketName,
+      Key: s3Key
+    });
+    return await getSignedUrl(s3Client, command, { expiresIn });
+  } catch (error) {
+    console.error('Error generating signed URL:', error);
+    return null;
+  }
+}
 
 // Get all PDFs for user
 router.get('/', authenticateToken, async (req, res) => {
@@ -215,7 +304,18 @@ router.get('/', authenticateToken, async (req, res) => {
       ]
     }).sort({ uploadDate: -1 });
 
-    res.json({ pdfs });
+    // Generate signed URLs for S3-stored PDFs
+    const pdfsWithUrls = await Promise.all(
+      pdfs.map(async (pdf) => {
+        const pdfObj = pdf.toObject();
+        if (pdf.s3Key && pdf.s3Bucket) {
+          pdfObj.signedUrl = await generateSignedUrl(pdf.s3Key, pdf.s3Bucket);
+        }
+        return pdfObj;
+      })
+    );
+
+    res.json({ pdfs: pdfsWithUrls });
   } catch (error) {
     console.error('Get PDFs error:', error);
     res.status(500).json({ 
@@ -270,11 +370,26 @@ router.delete('/:id', authenticateToken, async (req, res) => {
       return res.status(403).json({ error: 'Access denied', code: 'FORBIDDEN' });
     }
 
-    // Delete file from filesystem
-    try {
-      await fs.unlink(pdf.path);
-    } catch (err) {
-      console.log('File already deleted or not found');
+    // Delete file from S3 if it exists there
+    if (pdf.s3Key && pdf.s3Bucket) {
+      try {
+        await s3Client.send(new DeleteObjectCommand({
+          Bucket: pdf.s3Bucket,
+          Key: pdf.s3Key
+        }));
+        console.log(`Deleted file from S3: ${pdf.s3Key}`);
+      } catch (s3Error) {
+        console.error('Error deleting file from S3:', s3Error);
+        // Continue with database deletion even if S3 deletion fails
+      }
+    } else {
+      // Delete file from local filesystem (legacy support)
+      try {
+        await fs.unlink(pdf.path);
+        console.log(`Deleted local file: ${pdf.path}`);
+      } catch (err) {
+        console.log('File already deleted or not found');
+      }
     }
 
     await PDF.findByIdAndDelete(id);

@@ -13,6 +13,14 @@ const pdfSchema = new mongoose.Schema({
     type: String,
     required: true
   },
+  s3Key: {
+    type: String,
+    required: false // Optional for backward compatibility
+  },
+  s3Bucket: {
+    type: String,
+    required: false // Optional for backward compatibility
+  },
   size: {
     type: Number,
     required: true

@@ -94,3 +94,4 @@ server/uploads/
 ehthumbs.db
 Thumbs.db
 .env.backup
+env.template
