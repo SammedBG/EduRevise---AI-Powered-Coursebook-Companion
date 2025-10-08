@@ -6,7 +6,12 @@
 ✅ **Problem**: CORS was blocking requests due to trailing slash mismatch  
 ✅ **Solution**: Updated `server/index.js` to normalize origins and handle multiple allowed origins
 
-### **2. Missing Logo Files**
+### **2. Cookie SameSite Settings (Critical)**
+✅ **Problem**: Cookies not being sent across different domains (Vercel + Render)  
+✅ **Solution**: Changed `sameSite` from `'strict'` to `'none'` in production for cross-origin requests  
+✅ **Files Updated**: `server/routes/auth.js` (register, login, logout)
+
+### **3. Missing Logo Files**
 ✅ **Problem**: `logo192.png` and `logo512.png` not found  
 ✅ **Solution**: Created `logo.svg` and updated `manifest.json` to use SVG icons
 

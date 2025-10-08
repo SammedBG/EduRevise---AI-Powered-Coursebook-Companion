@@ -82,10 +82,12 @@ router.post('/register', async (req, res) => {
     );
 
     // Set secure HttpOnly cookie
+    // Use 'none' for cross-origin (Vercel + Render), 'lax' for local dev
+    const isProduction = process.env.NODE_ENV === 'production';
     res.cookie('token', token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
+      secure: isProduction, // Must be true in production for sameSite: 'none'
+      sameSite: isProduction ? 'none' : 'lax', // 'none' allows cross-origin cookies
       maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
     });
 
@@ -168,10 +170,12 @@ router.post('/login', async (req, res) => {
     );
 
     // Set secure HttpOnly cookie
+    // Use 'none' for cross-origin (Vercel + Render), 'lax' for local dev
+    const isProduction = process.env.NODE_ENV === 'production';
     res.cookie('token', token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
+      secure: isProduction, // Must be true in production for sameSite: 'none'
+      sameSite: isProduction ? 'none' : 'lax', // 'none' allows cross-origin cookies
       maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
     });
 
@@ -323,10 +327,11 @@ router.put('/profile', authenticateToken, async (req, res) => {
 router.post('/logout', authenticateToken, (req, res) => {
   try {
     // Clear the HttpOnly cookie
+    const isProduction = process.env.NODE_ENV === 'production';
     res.clearCookie('token', {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict'
+      secure: isProduction,
+      sameSite: isProduction ? 'none' : 'lax' // Must match cookie settings
     });
 
     res.json({
