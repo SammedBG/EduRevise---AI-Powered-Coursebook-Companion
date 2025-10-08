@@ -11,10 +11,15 @@ const api = axios.create({
   withCredentials: true, // Allow cookies to be sent
 });
 
-// Request interceptor - cookies are automatically sent with withCredentials: true
+// Request interceptor - add token from localStorage as fallback
 api.interceptors.request.use(
   (config) => {
-    // No need to manually add tokens - HttpOnly cookies are sent automatically
+    // Try to get token from localStorage (fallback for cross-origin issues)
+    const token = localStorage.getItem('token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    // HttpOnly cookies are also sent automatically with withCredentials: true
     return config;
   },
   (error) => {
@@ -27,6 +32,8 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
+      // Clear localStorage token on 401
+      localStorage.removeItem('token');
       // Only redirect to login if not already on login/register page
       const currentPath = window.location.pathname;
       if (!currentPath.includes('/login') && !currentPath.includes('/register')) {

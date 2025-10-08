@@ -93,7 +93,8 @@ router.post('/register', async (req, res) => {
 
     res.status(201).json({
       message: 'User created successfully',
-      user: user.toJSON()
+      user: user.toJSON(),
+      token: token // Send token in response as fallback
     });
   } catch (error) {
     console.error('Registration error:', error);
@@ -185,7 +186,8 @@ router.post('/login', async (req, res) => {
 
     res.json({
       message: 'Login successful',
-      user: user.toJSON()
+      user: user.toJSON(),
+      token: token // Send token in response as fallback
     });
   } catch (error) {
     console.error('Login error:', error);

@@ -42,7 +42,10 @@ export const AuthProvider = ({ children }) => {
   const login = async (credentials) => {
     try {
       const response = await authAPI.login(credentials);
-      // Token is now stored in HttpOnly cookie automatically
+      // Store token in localStorage as fallback (for cross-origin issues)
+      if (response.data.token) {
+        localStorage.setItem('token', response.data.token);
+      }
       setUser(response.data.user);
       return response.data;
     } catch (error) {
@@ -53,7 +56,10 @@ export const AuthProvider = ({ children }) => {
   const register = async (userData) => {
     try {
       const response = await authAPI.register(userData);
-      // Token is now stored in HttpOnly cookie automatically
+      // Store token in localStorage as fallback (for cross-origin issues)
+      if (response.data.token) {
+        localStorage.setItem('token', response.data.token);
+      }
       setUser(response.data.user);
       return response.data;
     } catch (error) {
@@ -68,6 +74,8 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       console.error('Logout error:', error);
     } finally {
+      // Clear localStorage token
+      localStorage.removeItem('token');
       setUser(null);
     }
   };
