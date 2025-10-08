@@ -1,4 +1,4 @@
-# 📚 Study Buddy - AI-Powered Learning Platform
+# 📚 Study Buddy - AI-Powered Learning Companion
 
 [![React](https://img.shields.io/badge/React-18.x-blue.svg)](https://reactjs.org/)
 [![Node.js](https://img.shields.io/badge/Node.js-18.x-green.svg)](https://nodejs.org/)
@@ -6,7 +6,7 @@
 [![AWS S3](https://img.shields.io/badge/AWS-S3-orange.svg)](https://aws.amazon.com/s3/)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-**Study Buddy** is a comprehensive AI-powered learning platform designed for students. Upload your PDF course materials and transform them into interactive study sessions with AI chat, auto-generated quizzes, progress tracking, and personalized video recommendations.
+**Study Buddy** is a comprehensive AI-powered learning companion platform designed for students. Upload your PDF course materials and transform them into interactive study sessions with AI chat, auto-generated quizzes, progress tracking, and personalized video recommendations.
 
 ---
 
@@ -366,7 +366,7 @@ Before you begin, ensure you have:
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/study-buddy.git
+git clone https://github.com/SammedBG/Study-Buddy---AI-Powered-Learning-Companion.git
 
 # Navigate to project directory
 cd study-buddy
