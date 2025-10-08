@@ -1,472 +1,432 @@
-# Study Buddy - AI-Powered Learning Companion
+# 📚 Study Buddy - AI-Powered Learning Platform
 
-[![Node.js](https://img.shields.io/badge/Node.js-18+-green.svg)](https://nodejs.org/)
-[![React](https://img.shields.io/badge/React-18+-blue.svg)](https://reactjs.org/)
-[![MongoDB](https://img.shields.io/badge/MongoDB-6.0+-green.svg)](https://mongodb.com/)
-[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![React](https://img.shields.io/badge/React-18.x-blue.svg)](https://reactjs.org/)
+[![Node.js](https://img.shields.io/badge/Node.js-18.x-green.svg)](https://nodejs.org/)
+[![MongoDB](https://img.shields.io/badge/MongoDB-Atlas-green.svg)](https://mongodb.com/cloud/atlas)
+[![AWS S3](https://img.shields.io/badge/AWS-S3-orange.svg)](https://aws.amazon.com/s3/)
+[![Deployed](https://img.shields.io/badge/Deployed-Render%20%7C%20Vercel-purple.svg)](https://render.com/)
 
-Study Buddy is an intelligent learning platform that combines PDF document analysis with AI-powered chat, quiz generation, and educational video recommendations to create a comprehensive study experience.
+**Study Buddy** is a comprehensive AI-powered learning platform that transforms PDF documents into interactive study materials. Students can upload their course materials, chat with an AI tutor, generate quizzes, track their progress, and get personalized recommendations.
 
-## 🎯 Project Overview
+## 🎯 Features
 
-Study Buddy transforms static PDF study materials into an interactive learning environment by:
+### ✅ **Core Features (Implemented)**
 
-- **Smart PDF Processing**: Extracts text, creates semantic chunks, and generates embeddings for intelligent search
-- **AI-Powered Chat**: ChatGPT-inspired interface with RAG (Retrieval Augmented Generation) for contextual answers
-- **Quiz Generation**: Creates MCQs, SAQs, and LAQs based on PDF content with detailed explanations
-- **Progress Tracking**: Monitors learning progress with analytics, weak/strong areas, and recommendations
-- **YouTube Integration**: Recommends relevant educational videos based on PDF content
-- **Modern UI/UX**: Professional, responsive design with purple/indigo theme
+#### **1. PDF Management & Processing**
+- **Upload & Store**: Secure cloud storage using AWS S3
+- **Text Extraction**: Advanced PDF parsing with OCR support
+- **Chunking & Embeddings**: Vector embeddings for semantic search
+- **RAG System**: Retrieval-Augmented Generation with citations
+- **Hybrid Search**: Keyword + semantic search capabilities
 
-## 🚀 Features
+#### **2. AI Chat System**
+- **Multiple LLM Support**: GROQ, Google Gemini, OpenAI, Hugging Face
+- **Context-Aware**: Answers based on uploaded PDFs
+- **Citations**: Page numbers and source quotes
+- **Chat Management**: Save, rename, delete conversations
+- **Auto-Naming**: Intelligent chat title generation
 
-### ✅ Implemented Features
+#### **3. Quiz Generation Engine**
+- **Multiple Formats**: MCQs, Short Answer, Long Answer Questions
+- **Smart Generation**: Based on PDF content and difficulty levels
+- **Detailed Explanations**: Step-by-step answer explanations
+- **Scoring System**: Automatic grading with feedback
+- **Attempt Tracking**: Store and review quiz history
 
-#### 1. **PDF Management System**
-- **Upload & Processing**: Support for PDF files up to 10MB with text extraction
-- **Smart Chunking**: Intelligent text segmentation with overlap for better context
-- **Vector Embeddings**: Integration with Gemini/OpenAI embeddings for semantic search
-- **OCR Support**: Framework ready for scanned PDF processing
-- **Metadata Extraction**: Automatic extraction of PDF metadata (title, author, pages)
-- **Search & Filter**: Full-text search across all uploaded PDFs
+#### **4. Progress Tracking**
+- **Dashboard Analytics**: Visual progress overview
+- **Subject-Specific Stats**: Performance by subject/topic
+- **Weak/Strong Areas**: AI-identified learning patterns
+- **Mastery Levels**: Progress tracking with recommendations
+- **Learning Streaks**: Gamification elements
 
-#### 2. **AI-Powered Chat System**
-- **ChatGPT-Inspired UI**: Professional chat interface with collapsible sidebar
-- **RAG Implementation**: Hybrid search combining keyword and semantic similarity
-- **Enhanced Citations**: Page numbers, relevance scores, and source snippets
-- **Multi-LLM Support**: GROQ (Llama 3.1 70B), Gemini, OpenAI, Hugging Face
-- **Response Refinement**: Multi-step AI process for improved answer accuracy
-- **Auto Chat Naming**: Automatic generation of descriptive chat titles
-- **PDF Context Selection**: Dynamic PDF selection for focused conversations
+#### **5. YouTube Integration**
+- **Educational Videos**: AI-recommended relevant content
+- **Content Matching**: Videos matched to PDF topics
+- **Rich Metadata**: Thumbnails, duration, views, likes
+- **Direct Links**: Seamless video access
 
-#### 3. **Quiz Generation Engine**
-- **Question Types**: Multiple Choice (MCQ), Short Answer (SAQ), Long Answer (LAQ)
-- **Difficulty Levels**: Easy, Medium, Hard with adaptive difficulty
-- **Smart Generation**: LLM-powered question creation from PDF content
-- **Detailed Scoring**: Comprehensive scoring with explanations and feedback
-- **Source References**: Questions linked to specific PDF pages and content
-- **Regeneration**: Option to generate new question sets
-- **Attempt Tracking**: Complete history of quiz attempts and progress
+#### **6. User Authentication**
+- **Secure Login**: JWT-based authentication
+- **HttpOnly Cookies**: Enhanced security
+- **User Profiles**: Personalized experience
+- **Session Management**: Automatic logout and refresh
 
-#### 4. **Progress Tracking & Analytics**
-- **Dashboard**: Overview of learning progress with key metrics
-- **Subject Analytics**: Detailed breakdown by subject and topic
-- **Weak/Strong Areas**: Identification of topics needing attention
-- **Learning Recommendations**: AI-powered suggestions for improvement
-- **Streak Tracking**: Daily learning streaks and consistency metrics
-- **Mastery Levels**: Beginner, Intermediate, Advanced, Expert categorization
+### 🎨 **UI/UX Features**
+- **Modern Design**: Clean, professional interface
+- **Responsive Layout**: Mobile-friendly design
+- **ChatGPT-Inspired Chat**: Familiar chat interface
+- **Dark/Light Theme**: User preference support
+- **Loading States**: Smooth user experience
+- **Error Handling**: Comprehensive error management
 
-#### 5. **YouTube Video Recommendations**
-- **Smart Content Analysis**: Keyword extraction from PDF content
-- **Educational Focus**: Prioritizes tutorial and educational content
-- **Relevance Scoring**: Advanced algorithm for video relevance
-- **Rich Metadata**: Duration, view count, likes, comments, publish date
-- **Batch Recommendations**: Support for multiple PDF recommendations
-- **Direct Integration**: Seamless access from PDF Manager
+## 🏗️ Architecture
 
-#### 6. **User Authentication & Management**
-- **JWT Authentication**: Secure token-based authentication
-- **User Registration/Login**: Complete auth flow with validation
-- **Profile Management**: User profile with subjects and preferences
-- **Access Control**: PDF ownership and privacy controls
+### **Frontend (React.js)**
+```
+client/
+├── src/
+│   ├── components/          # Reusable UI components
+│   │   ├── Auth/           # Login/Register components
+│   │   ├── Chat/           # Chat interface
+│   │   ├── PDF/            # PDF management
+│   │   ├── Quiz/           # Quiz components
+│   │   ├── Progress/       # Progress tracking
+│   │   └── YouTube/        # Video recommendations
+│   ├── contexts/           # React Context providers
+│   ├── services/           # API service layer
+│   └── utils/              # Utility functions
+```
 
-#### 7. **Modern UI/UX**
-- **Responsive Design**: Mobile-first approach with desktop optimization
-- **Professional Theme**: Purple/indigo gradient color scheme
-- **Loading States**: Smooth animations and loading indicators
-- **Error Handling**: Comprehensive error boundaries and user feedback
-- **Accessibility**: ARIA labels and keyboard navigation support
+### **Backend (Node.js + Express)**
+```
+server/
+├── routes/                 # API endpoints
+│   ├── auth.js            # Authentication routes
+│   ├── pdfs.js            # PDF management
+│   ├── chat.js            # Chat functionality
+│   ├── quiz.js            # Quiz generation
+│   ├── progress.js        # Progress tracking
+│   └── youtube.js         # YouTube integration
+├── models/                # MongoDB schemas
+├── middleware/            # Custom middleware
+└── utils/                 # Helper functions
+```
 
-## 🛠️ Technology Stack
+### **Database (MongoDB Atlas)**
+- **Users**: Authentication and profiles
+- **PDFs**: Document metadata and content
+- **Chats**: Conversation history
+- **Quizzes**: Generated questions and attempts
+- **Progress**: Learning analytics
 
-### Backend
-- **Runtime**: Node.js 18+
-- **Framework**: Express.js
-- **Database**: MongoDB with Mongoose ODM
-- **Authentication**: JWT (JSON Web Tokens)
-- **File Processing**: Multer, pdf-parse, Tesseract.js
-- **AI/ML**: 
-  - GROQ API (Llama 3.1 70B)
-  - Google Gemini API
-  - OpenAI API
-  - Hugging Face API
-  - Google Generative AI
-- **External APIs**: YouTube Data API v3
-- **Security**: Helmet, CORS, Rate Limiting
+### **Storage (AWS S3)**
+- **Secure Storage**: Private bucket with signed URLs
+- **User Isolation**: Files organized by user ID
+- **Automatic Cleanup**: Failed uploads removed
+- **Scalable**: Handles unlimited files
 
-### Frontend
-- **Framework**: React 18+
-- **Styling**: Tailwind CSS
-- **State Management**: React Context API
-- **HTTP Client**: Axios
-- **Routing**: React Router v6
-- **Icons**: React Icons (Feather Icons)
-- **Notifications**: React Hot Toast
-- **Build Tool**: Create React App
+## 🤖 AI/LLM Integration
 
-### Development Tools
-- **Version Control**: Git
-- **Package Manager**: npm
-- **Code Quality**: ESLint, Prettier
-- **Environment**: dotenv
+### **Primary LLM: GROQ (Llama 3.1 70B)**
+- **Purpose**: Main chat responses and quiz generation
+- **Why GROQ**: Fast inference, cost-effective, reliable
+- **Model**: `llama-3.3-70b-versatile`
+- **Usage**: 
+  - Chat conversations with PDF context
+  - Quiz question generation
+  - Answer explanations
+  - Progress analysis
 
-## 🚀 Setup Instructions
+### **Secondary LLM: Google Gemini**
+- **Purpose**: Embeddings and fallback chat
+- **Model**: `gemini-1.5-flash` (chat), `text-embedding-004` (embeddings)
+- **Usage**:
+  - Vector embeddings for PDF chunks
+  - Semantic search functionality
+  - Fallback chat responses
+  - Content analysis
 
-### Prerequisites
-- Node.js 18+ 
-- MongoDB 6.0+
-- Git
+### **Fallback LLMs**
+- **OpenAI GPT-4**: Premium chat responses
+- **Hugging Face**: Alternative chat and quiz generation
+- **Mock Responses**: Offline functionality
 
-### 1. Clone the Repository
+### **LLM Usage Breakdown**
+
+| Feature | Primary LLM | Secondary | Purpose |
+|---------|-------------|-----------|---------|
+| **Chat Responses** | GROQ (Llama 3.1 70B) | Gemini, OpenAI | Context-aware answers with citations |
+| **Quiz Generation** | GROQ (Llama 3.1 70B) | Hugging Face | MCQs, SAQs, LAQs with explanations |
+| **PDF Embeddings** | Gemini (text-embedding-004) | OpenAI (text-embedding-3-small) | Vector search and RAG |
+| **Chat Naming** | GROQ (Llama 3.3 70B) | - | Auto-generate descriptive titles |
+| **Progress Analysis** | GROQ (Llama 3.1 70B) | - | Identify weak/strong areas |
+| **YouTube Recommendations** | GROQ (Llama 3.1 70B) | - | Match videos to PDF content |
+
+## 🚀 Quick Start
+
+### **Prerequisites**
+- Node.js 18.x or higher
+- MongoDB Atlas account
+- AWS account (for S3 storage)
+- API keys for LLM services
+
+### **1. Clone Repository**
 ```bash
-git clone https://github.com/SammedBG/Study-Buddy---AI-Powered-Learning-Companion.git
+git clone https://github.com/yourusername/study-buddy.git
 cd study-buddy
 ```
 
-### 2. Backend Setup
+### **2. Install Dependencies**
 ```bash
+# Install server dependencies
 cd server
+npm install
+
+# Install client dependencies
+cd ../client
 npm install
 ```
 
-Create `.env` file in server directory:
+### **3. Environment Setup**
+
+#### **Backend Environment (`server/.env`)**
 ```bash
 # Database
-MONGODB_URI=mongodb://localhost:27017/study-buddy
+MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/study-buddy
 
-# JWT Secret
-JWT_SECRET=your-super-secret-jwt-key-here
-
-# LLM API Keys (choose one or more)
-GROQ_API_KEY=your-groq-api-key-here
-OPENAI_API_KEY=your-openai-api-key-here
-GEMINI_API_KEY=your-gemini-api-key-here
-HF_API_TOKEN=your-hugging-face-token-here
-
-# YouTube Data API
-YOUTUBE_API_KEY=your-youtube-data-api-key-here
+# Authentication
+JWT_SECRET=your-super-secret-jwt-key-minimum-32-characters-long
 
 # Server Configuration
 PORT=5000
 NODE_ENV=development
+CORS_ORIGIN=http://localhost:3000
+
+# AWS S3 Configuration (Required)
+AWS_ACCESS_KEY_ID=your-aws-access-key-id
+AWS_SECRET_ACCESS_KEY=your-aws-secret-access-key
+AWS_REGION=ap-south-1
+S3_BUCKET_NAME=your-s3-bucket-name
+
+# AI API Keys (At least one required)
+GROQ_API_KEY=your-groq-api-key
+GEMINI_API_KEY=your-google-gemini-api-key
+OPENAI_API_KEY=your-openai-api-key
+HF_API_TOKEN=your-huggingface-api-token
+
+# YouTube API (Optional)
+YOUTUBE_API_KEY=your-youtube-data-api-key
 ```
 
-### 3. Frontend Setup
-```bash
-cd client
-npm install
-```
-
-Create `.env` file in client directory:
+#### **Frontend Environment (`client/.env`)**
 ```bash
 REACT_APP_API_URL=http://localhost:5000/api
 ```
 
-### 4. Database Setup
-Ensure MongoDB is running:
+### **4. Run Development Servers**
 ```bash
-# Start MongoDB (varies by installation)
-mongod
-```
-
-### 5. Running the Application
-
-#### Development Mode
-```bash
-# Terminal 1 - Backend
+# Terminal 1: Start backend server
 cd server
 npm run dev
 
-# Terminal 2 - Frontend
+# Terminal 2: Start frontend client
 cd client
 npm start
 ```
 
-#### Production Mode
-```bash
-# Build frontend
-cd client
-npm run build
+### **5. Access Application**
+- **Frontend**: http://localhost:3000
+- **Backend API**: http://localhost:5000/api
+- **Health Check**: http://localhost:5000/api/health
 
-# Start backend
-cd server
-npm start
-```
+## 📋 Setup Guides
 
-## 🔧 API Documentation
+### **AWS S3 Setup**
+1. **Create S3 Bucket**: [AWS Console](https://console.aws.amazon.com/s3)
+2. **Create IAM User**: With S3 permissions
+3. **Get Credentials**: Access key and secret key
+4. **Configure CORS**: For web uploads
+5. **Test Connection**: Run `node server/test-s3.js`
 
-### Authentication Endpoints
-```
-POST /api/auth/register    # User registration
-POST /api/auth/login       # User login
-GET  /api/auth/profile     # Get user profile
-PUT  /api/auth/profile     # Update user profile
-```
+See [AWS_S3_SETUP.md](AWS_S3_SETUP.md) for detailed instructions.
 
-### PDF Management Endpoints
-```
-POST   /api/pdfs/upload           # Upload PDF
-GET    /api/pdfs                  # Get all PDFs
-GET    /api/pdfs/:id              # Get specific PDF
-DELETE /api/pdfs/:id              # Delete PDF
-POST   /api/pdfs/:id/process      # Process PDF for RAG
-GET    /api/pdfs/search/:query    # Search PDFs
-```
+### **MongoDB Atlas Setup**
+1. **Create Cluster**: [MongoDB Atlas](https://cloud.mongodb.com)
+2. **Create Database User**: With read/write permissions
+3. **Whitelist IP**: Add `0.0.0.0/0` for development
+4. **Get Connection String**: Update `MONGODB_URI`
 
-### Chat Endpoints
-```
-GET    /api/chat                  # Get all chats
-POST   /api/chat                  # Create new chat
-GET    /api/chat/:id              # Get specific chat
-POST   /api/chat/:id/messages     # Send message
-DELETE /api/chat/:id              # Delete chat
-```
+### **LLM API Setup**
 
-### Quiz Endpoints
-```
-POST   /api/quiz/generate         # Generate quiz
-GET    /api/quiz                  # Get all quizzes
-GET    /api/quiz/:id              # Get specific quiz
-POST   /api/quiz/:id/submit       # Submit quiz answers
-GET    /api/quiz/:id/results      # Get quiz results
-POST   /api/quiz/:id/regenerate   # Regenerate quiz
-DELETE /api/quiz/:id              # Delete quiz
-```
+#### **GROQ API (Recommended)**
+1. **Sign Up**: [console.groq.com](https://console.groq.com)
+2. **Create API Key**: Free tier available
+3. **Add to .env**: `GROQ_API_KEY=your-key`
 
-### Progress Endpoints
-```
-GET    /api/progress/dashboard           # Get dashboard data
-GET    /api/progress/subject/:subject    # Get subject progress
-GET    /api/progress/topic/:topicId      # Get topic progress
-GET    /api/progress/recommendations     # Get learning recommendations
-GET    /api/progress/analytics           # Get progress analytics
-```
+#### **Google Gemini API**
+1. **Google AI Studio**: [makersuite.google.com](https://makersuite.google.com)
+2. **Create API Key**: Free tier available
+3. **Add to .env**: `GEMINI_API_KEY=your-key`
 
-### YouTube Endpoints
-```
-GET    /api/youtube/recommendations/:pdfId    # Get PDF recommendations
-POST   /api/youtube/recommendations/batch     # Get batch recommendations
-GET    /api/youtube/video/:videoId            # Get video details
-```
-
-## 🤖 LLM Integration Details
-
-### AI Models Used
-
-#### 1. **GROQ API (Primary)**
-- **Model**: Llama 3.1 70B Versatile
-- **Purpose**: Chat responses, quiz generation, response refinement
-- **Advantages**: Fast inference, cost-effective, high quality responses
-- **Usage**: Primary choice for all text generation tasks
-
-#### 2. **Google Gemini API**
-- **Models**: Gemini Pro, text-embedding-004
-- **Purpose**: Chat fallback, free embeddings
-- **Advantages**: Free embeddings, good quality responses
-- **Usage**: Embedding generation, chat fallback
-
-#### 3. **OpenAI API**
-- **Models**: GPT-4o-mini, text-embedding-3-small
-- **Purpose**: Chat fallback, embedding fallback
-- **Usage**: Premium fallback option
-
-#### 4. **Hugging Face API**
-- **Models**: DialoGPT-large, various open-source models
-- **Purpose**: Chat fallback
-- **Usage**: Free alternative for basic chat
-
-### AI Tools Usage
-
-#### 1. **Claude (Anthropic) - Primary Development Assistant**
-- **Purpose**: Code generation, debugging, architecture decisions
-- **Usage**: 
-  - Implemented entire backend API structure
-  - Created comprehensive error handling system
-  - Designed RAG implementation with embeddings
-  - Built YouTube integration with relevance scoring
-  - Developed frontend components and UI/UX
-  - Wrote detailed documentation and setup guides
-
-#### 2. **Code Generation & Architecture**
-- **Backend Routes**: All API endpoints with comprehensive error handling
-- **Database Models**: Mongoose schemas with validation
-- **Frontend Components**: React components with modern UI/UX
-- **Integration Logic**: YouTube API, LLM APIs, embedding systems
-
-#### 3. **Problem Solving & Debugging**
-- **Memory Management**: Fixed heap overflow issues with file processing
-- **API Integration**: Resolved LLM API conflicts and fallback systems
-- **UI/UX Issues**: Fixed layout problems, responsive design
-- **Error Handling**: Implemented comprehensive error boundaries
-
-#### 4. **Feature Development**
-- **RAG System**: Hybrid search with semantic similarity
-- **Quiz Engine**: LLM-powered question generation with scoring
-- **Progress Tracking**: Analytics and recommendation systems
-- **YouTube Integration**: Smart content analysis and video recommendations
-
-## 🏗️ Architecture & Design Decisions
-
-### Backend Architecture
-```
-server/
-├── routes/           # API route handlers
-├── models/          # MongoDB schemas
-├── middleware/      # Custom middleware
-├── utils/           # Utility functions
-├── uploads/         # File storage
-└── index.js         # Server entry point
-```
-
-### Frontend Architecture
-```
-client/src/
-├── components/      # React components
-├── contexts/        # React contexts
-├── services/        # API services
-├── styles/          # CSS and styling
-└── App.js           # Main app component
-```
-
-### Key Design Decisions
-
-#### 1. **RAG Implementation**
-- **Hybrid Search**: Combines keyword and semantic search
-- **Chunking Strategy**: 1000-character chunks with 150-character overlap
-- **Embedding Model**: Google Gemini text-embedding-004 (free)
-- **Context Window**: Optimized for LLM token limits
-
-#### 2. **Error Handling Strategy**
-- **Comprehensive Coverage**: All routes with specific error codes
-- **User-Friendly Messages**: Clear error messages for frontend
-- **Graceful Degradation**: Fallback systems for API failures
-- **Logging**: Detailed error logging for debugging
-
-#### 3. **Security Implementation**
-- **JWT Authentication**: Secure token-based auth
-- **Input Validation**: Comprehensive validation on all inputs
-- **File Upload Security**: Size limits, type checking, malware protection
-- **Rate Limiting**: API rate limiting to prevent abuse
-
-#### 4. **Performance Optimization**
-- **Memory Management**: Efficient file processing with cleanup
-- **Caching Strategy**: Ready for Redis integration
-- **Lazy Loading**: Frontend component lazy loading
-- **Database Indexing**: Optimized MongoDB queries
-
-## 🧪 Testing Strategy
-
-### Current Testing Status
-- **Manual Testing**: Comprehensive manual testing of all features
-- **API Testing**: Postman collections for all endpoints
-- **UI Testing**: Cross-browser and responsive testing
-- **Error Testing**: Edge cases and error scenarios
-
-### Testing Coverage Needed
-- **Unit Tests**: Jest for individual functions
-- **Integration Tests**: API endpoint testing
-- **E2E Tests**: Cypress for user workflows
-- **Performance Tests**: Load testing for scalability
+#### **OpenAI API**
+1. **OpenAI Platform**: [platform.openai.com](https://platform.openai.com)
+2. **Create API Key**: Paid service
+3. **Add to .env**: `OPENAI_API_KEY=your-key`
 
 ## 🚀 Deployment
 
-### Environment Setup
+### **Render.com Deployment**
+1. **Connect GitHub**: Link your repository
+2. **Auto-Deploy**: Uses `render.yaml` configuration
+3. **Set Environment Variables**: Add all required keys
+4. **Deploy**: Automatic deployment on git push
+
+See [RENDER_DEPLOYMENT.md](RENDER_DEPLOYMENT.md) for detailed instructions.
+
+### **Vercel Deployment**
+1. **Import Project**: Connect GitHub repository
+2. **Configure Build**: Uses `vercel.json` settings
+3. **Environment Variables**: Add in Vercel dashboard
+4. **Deploy**: Automatic deployment
+
+See [VERCEL_DEPLOYMENT.md](VERCEL_DEPLOYMENT.md) for detailed instructions.
+
+## 💰 Cost Analysis
+
+### **Free Tier Limits**
+- **AWS S3**: 5GB storage, 20K requests/month (12 months)
+- **MongoDB Atlas**: 512MB storage, 100 connections
+- **GROQ**: Free tier with rate limits
+- **Google Gemini**: Free tier available
+- **Render**: Free tier with sleep mode
+- **Vercel**: Free tier with bandwidth limits
+
+### **Production Costs (100 users)**
+- **AWS S3**: $1-5/month
+- **MongoDB Atlas**: Free (M0 tier)
+- **LLM APIs**: $10-50/month
+- **Hosting**: $7-20/month
+- **Total**: $18-75/month
+
+## 🧪 Testing
+
+### **API Testing**
 ```bash
-# Production environment variables
-NODE_ENV=production
-MONGODB_URI=mongodb+srv://...
-JWT_SECRET=production-secret
-# ... other production keys
+# Health check
+curl http://localhost:5000/api/health
+
+# Test S3 connection
+cd server
+node test-s3.js
+
+# Test authentication
+curl -X POST http://localhost:5000/api/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"username":"test","email":"test@example.com","password":"password123","name":"Test User","grade":"Grade 12"}'
 ```
 
-### Deployment Options
+### **Frontend Testing**
+```bash
+# Start client
+cd client
+npm start
 
-#### 1. **Traditional VPS/Cloud**
-- **Backend**: Node.js on Ubuntu/CentOS
-- **Frontend**: Nginx static hosting
-- **Database**: MongoDB Atlas or self-hosted
-- **Process Manager**: PM2
+# Run tests
+npm test
 
-#### 2. **Container Deployment**
-- **Docker**: Multi-stage builds for optimization
-- **Docker Compose**: Local development setup
-- **Kubernetes**: Production scaling
+# Build for production
+npm run build
+```
 
-#### 3. **Platform as a Service**
-- **Backend**: Railway, Render, Heroku
-- **Frontend**: Vercel, Netlify
-- **Database**: MongoDB Atlas
+## 🔧 Development
 
-## 📊 Performance Metrics
+### **Project Structure**
+```
+study-buddy/
+├── client/                 # React frontend
+├── server/                 # Node.js backend
+├── docs/                   # Documentation
+├── render.yaml            # Render deployment config
+├── vercel.json            # Vercel deployment config
+└── README.md              # This file
+```
 
-### Current Performance
-- **File Upload**: < 5 seconds for 10MB PDFs
-- **Text Processing**: < 2 seconds for typical documents
-- **Chat Response**: < 3 seconds with LLM APIs
-- **Quiz Generation**: < 10 seconds for 10 questions
+### **Key Technologies**
+- **Frontend**: React 18, Tailwind CSS, React Router, Axios
+- **Backend**: Node.js, Express.js, MongoDB, Mongoose
+- **Storage**: AWS S3, Multer, AWS SDK v3
+- **AI/ML**: GROQ, Google Gemini, OpenAI, Hugging Face
+- **Authentication**: JWT, HttpOnly Cookies, bcrypt
+- **Deployment**: Render.com, Vercel
 
-### Optimization Targets
-- **Response Time**: < 1 second for API calls
-- **File Processing**: < 3 seconds for uploads
-- **Memory Usage**: < 512MB for typical operations
-- **Concurrent Users**: Support 100+ simultaneous users
+### **Code Quality**
+- **Error Handling**: Comprehensive error management
+- **Input Validation**: Request validation and sanitization
+- **Security**: CORS, rate limiting, secure headers
+- **Performance**: Memory management, file cleanup
+- **Logging**: Structured logging and monitoring
 
-## 🔮 Future Roadmap
+## 📊 Performance & Monitoring
 
-### Phase 1 (Next 3 months)
-- [ ] Complete OCR implementation
-- [ ] Add unit and integration tests
-- [ ] Implement caching with Redis
-- [ ] Add mobile responsive improvements
+### **Optimizations**
+- **Memory Management**: Node.js heap optimization
+- **File Processing**: Chunked processing for large PDFs
+- **Database Indexing**: Optimized queries
+- **CDN**: Static asset delivery
+- **Caching**: API response caching
 
-### Phase 2 (3-6 months)
-- [ ] Collaborative features (study groups)
-- [ ] Advanced analytics dashboard
-- [ ] Flashcard system with spaced repetition
-- [ ] Multi-language support
+### **Monitoring**
+- **Health Checks**: `/api/health` endpoint
+- **Error Tracking**: Comprehensive error logging
+- **Performance Metrics**: Response times and throughput
+- **Resource Usage**: Memory and CPU monitoring
 
-### Phase 3 (6-12 months)
-- [ ] Mobile application (React Native)
-- [ ] Offline support and sync
-- [ ] Advanced AI features (personalized learning)
-- [ ] Enterprise features (institutional deployment)
+## 🚧 Known Issues & Limitations
+
+### **Current Limitations**
+1. **PDF Size**: 10MB limit per file
+2. **Text Extraction**: Scanned PDFs need OCR
+3. **Rate Limits**: API rate limiting on free tiers
+4. **Cold Starts**: Serverless deployment delays
+
+### **Future Enhancements**
+1. **Mobile App**: React Native version
+2. **Offline Mode**: PWA capabilities
+3. **Collaboration**: Multi-user study sessions
+4. **Advanced Analytics**: Learning pattern analysis
+5. **Voice Interface**: Audio input/output
+6. **Document Types**: Support for Word, PowerPoint
 
 ## 🤝 Contributing
 
-### Development Setup
+### **Development Setup**
 1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests for new features
-5. Submit a pull request
+2. Create feature branch: `git checkout -b feature/new-feature`
+3. Make changes and test
+4. Commit: `git commit -m "Add new feature"`
+5. Push: `git push origin feature/new-feature`
+6. Create Pull Request
 
-### Code Standards
-- **ESLint**: Follow configured linting rules
-- **Prettier**: Consistent code formatting
-- **Commit Messages**: Use conventional commits
-- **Documentation**: Update README for new features
+### **Code Style**
+- **ESLint**: JavaScript linting
+- **Prettier**: Code formatting
+- **Conventional Commits**: Commit message format
+- **TypeScript**: Future migration planned
 
-## 📝 License
+## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## 🙏 Acknowledgments
 
-- **OpenAI**: For GPT models and embeddings
-- **Google**: For Gemini API and YouTube Data API
-- **GROQ**: For fast inference with Llama models
-- **MongoDB**: For flexible document storage
+- **GROQ**: For providing fast LLM inference
+- **Google**: For Gemini API and embeddings
+- **AWS**: For reliable cloud storage
+- **MongoDB**: For database services
 - **React Team**: For the excellent frontend framework
-- **Tailwind CSS**: For rapid UI development
+- **OpenAI**: For GPT models and embeddings
 
-## 📞 Support & Contact
+## 📞 Support
 
-- **Issues**: [GitHub Issues](https://github.com/yourusername/study-buddy/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/yourusername/study-buddy/discussions)
+### **Documentation**
+- [Setup Guide](docs/SETUP.md)
+- [API Documentation](docs/API.md)
+- [Deployment Guide](docs/DEPLOYMENT.md)
+- [Troubleshooting](docs/TROUBLESHOOTING.md)
+
+### **Community**
+- **GitHub Issues**: Bug reports and feature requests
+- **Discussions**: Community support and ideas
+- **Discord**: Real-time community chat
+
+### **Contact**
 - **Email**: support@studybuddy.com
+- **Twitter**: [@StudyBuddyApp](https://twitter.com/StudyBuddyApp)
+- **Website**: [studybuddy.com](https://studybuddy.com)
 
 ---
 
-**Built with ❤️ for learners everywhere**
+**🎓 Happy Learning with Study Buddy!**
 
-*Study Buddy - Your AI-powered learning companion for the modern student*
+*Transform your study materials into an interactive learning experience with the power of AI.*

@@ -13,8 +13,35 @@ const app = express();
 app.set('trust proxy', 1);
 app.use(helmet());
 app.use(cookieParser());
+
+// CORS Configuration - Handle multiple origins
+const allowedOrigins = [
+  'http://localhost:3000',
+  'http://localhost:3001',
+  'https://study-buddy-ai-powered-learning-com.vercel.app',
+  process.env.CORS_ORIGIN
+].filter(Boolean);
+
 app.use(cors({
-  origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    // Remove trailing slash from origin for comparison
+    const normalizedOrigin = origin.replace(/\/$/, '');
+    
+    // Check if the origin is in the allowed list (with or without trailing slash)
+    const isAllowed = allowedOrigins.some(allowed => {
+      const normalizedAllowed = allowed.replace(/\/$/, '');
+      return normalizedOrigin === normalizedAllowed;
+    });
+    
+    if (isAllowed) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true // Allow cookies to be sent
 }));
 app.use(express.json({ limit: '50mb' }));

@@ -35,7 +35,7 @@ services:
       - key: S3_BUCKET_NAME
         value: verra-my-website-2025
       - key: CORS_ORIGIN
-        value: https://study-buddy-frontend.onrender.com
+        value: https://study-buddy-ai-powered-learning-com.vercel.app
     healthCheckPath: /api/health
     autoDeploy: true
 

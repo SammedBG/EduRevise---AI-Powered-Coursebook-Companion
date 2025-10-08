@@ -677,7 +677,7 @@ async function refineResponseWithGROQ(initialResponse, userMessage, contextStrin
     const shortResponse = initialResponse.slice(0, 200);
     
     const response = await axios.post('https://api.groq.com/openai/v1/chat/completions', {
-      model: 'llama-3.1-70b-versatile',
+      model: 'llama-3.3-70b-versatile',
       messages: [
         {
           role: 'system',
