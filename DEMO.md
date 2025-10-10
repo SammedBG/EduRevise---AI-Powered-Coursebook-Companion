@@ -21,8 +21,8 @@ This guide demonstrates the entire user journey through the Study Buddy applicat
 ---
 ## use demo credntials 
 
-*email:*admin@gmail.com      
-*password:*123456
+**email:** admin@example.com      
+**password:** 123456
 
 ## 1. Registration & Login
 
