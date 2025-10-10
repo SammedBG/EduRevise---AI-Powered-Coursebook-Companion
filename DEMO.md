@@ -19,9 +19,10 @@ This guide demonstrates the entire user journey through the Study Buddy applicat
 9. [Logout](#9-logout)
 
 ---
-##use demo credntials
-email:admin@gmail.com
-password:123456
+## use demo credntials 
+
+*email:*admin@gmail.com      
+*password:*123456
 
 ## 1. Registration & Login
 
